@@ -1,0 +1,10 @@
+[File] : Represents a Automa script/file
+ |
+ V
+[Tokenizer] : Places all lines of a the file into a List of strings
+ |
+ V
+[Parser] : Determines the instructions
+ |
+ V
+[Executor] : Executes all instructions

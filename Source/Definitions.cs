@@ -1,4 +1,5 @@
 ﻿using Automa.Source.Core;
+using Automa.Source.Utility;
 using System.Diagnostics;
 
 namespace Automa.Source
@@ -96,22 +97,51 @@ namespace Automa.Source
         public bool Evaluate()
         {
 
-
-          //  Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
+             Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
 
             if(left is VariableExpression Lexpr && right is VariableExpression Rexpr)
             {
+                Variable Nleft = Cache.UpdateVariable(Lexpr.Value, Cache.CurrentBlock);
+                Variable NRight = Cache.UpdateVariable(Rexpr.Value, Cache.CurrentBlock);
+
+                if(Lexpr.value != Nleft)
+                {
+                    Lexpr = new VariableExpression(Nleft);
+                }
+
+                if(Rexpr.value != NRight)
+                {
+                    Rexpr = new VariableExpression(NRight);
+                }
+
                 return Lexpr.Value.value == Rexpr.Value.value;
             }
 
             if(left is VariableExpression Lexpr2 && right is LiteralExpression Rexpr2)
             {
-                //Console.WriteLine("Debug: Values: {0} , {1}", Lexpr2.Value.value, Rexpr2.Value);
+                Console.WriteLine("Debug: Values: {0} , {1}", Lexpr2.Value.value, Rexpr2.Value);
+
+                Variable Nleft = Cache.UpdateVariable(Lexpr2.Value, Cache.CurrentBlock);
+
+                if (Lexpr2.value != Nleft)
+                {
+                    Lexpr2 = new VariableExpression(Nleft);
+                }
+
+
                 return Lexpr2.Value.value == Rexpr2.Value;
             }
 
             if(left is LiteralExpression Lexpr3 && right is VariableExpression Rexpr3)
             {
+
+                Variable NRight = Cache.UpdateVariable(Rexpr3.Value, Cache.CurrentBlock);
+
+                if (Rexpr3.value != NRight)
+                {
+                    Rexpr = new VariableExpression(NRight);
+                }
+
                 return Lexpr3.Value == Rexpr3.Value.value;
             }
 
@@ -129,20 +159,51 @@ namespace Automa.Source
         public bool Evaluate()
         {
 
-            //Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
+            Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
 
             if (left is VariableExpression Lexpr && right is VariableExpression Rexpr)
             {
+
+                Variable Nleft = Cache.UpdateVariable(Lexpr.Value, Cache.CurrentBlock);
+                Variable NRight = Cache.UpdateVariable(Rexpr.Value, Cache.CurrentBlock);
+
+                if (Lexpr.value != Nleft)
+                {
+                    Lexpr = new VariableExpression(Nleft);
+                }
+
+                if (Rexpr.value != NRight)
+                {
+                    Rexpr = new VariableExpression(NRight);
+                }
+
+
                 return Lexpr.Value.value != Rexpr.Value.value;
             }
 
             if (left is VariableExpression Lexpr2 && right is LiteralExpression Rexpr2)
             {
+
+                Variable Nleft = Cache.UpdateVariable(Lexpr2.Value, Cache.CurrentBlock);
+
+                if (Lexpr2.value != Nleft)
+                {
+                    Lexpr2 = new VariableExpression(Nleft);
+                }
+
                 return Lexpr2.Value.value != Rexpr2.Value;
             }
 
             if (left is LiteralExpression Lexpr3 && right is VariableExpression Rexpr3)
             {
+
+                Variable NRight = Cache.UpdateVariable(Rexpr3.Value, Cache.CurrentBlock);
+
+                if (Rexpr3.value != NRight)
+                {
+                    Rexpr = new VariableExpression(NRight);
+                }
+
                 return Lexpr3.Value != Rexpr3.Value.value;
             }
 

@@ -78,7 +78,8 @@ namespace Automa.Source.Core
                                 BlockInstructions.Clear();
                             }else if(Current == TokenType.Else)
                             {
-                                Instructions.Add(new Else(BlockInstructions, Variables));
+                                Instructions.Add(new Else(new(BlockInstructions), Variables));
+                                BlockInstructions.Clear();
                             }
 
                         }
@@ -124,6 +125,9 @@ namespace Automa.Source.Core
                     var nLine = Line.Replace(Keywords[5]," ");
                     var cmd = ExtractCommand(nLine);
                     Instructions.Add(new RunInstruction(cmd));
+
+                    Variables.Add(new Variable(cmd.target, ""));
+
                     continue;
                 }
                 else // Variable Declaration

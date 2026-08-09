@@ -37,13 +37,15 @@ namespace Automa.Source.Core
 
                             //Console.WriteLine("Debug: Parsing IFBlock");
 
-                            block.Variables.AddRange(Variables.Where(c => !block.Variables.Contains(c)));
                             if (prevSucc)
                             {
                                 prevSucc = false;
                             }
 
-                            if(block.expression is EqualTo eq)
+                            Cache.CurrentBlock = block.Variables;
+                            block.Variables.AddRange(Variables.Where(c => !block.Variables.Contains(c)));
+
+                            if (block.expression is EqualTo eq)
                             {
                                 //Console.WriteLine("Debug: Block is a EQTO");
                                 if (eq.Evaluate())
@@ -54,6 +56,7 @@ namespace Automa.Source.Core
                                     prevSucc = !prevSucc;
                                     Variables = block.Variables.Intersect(Variables).ToList();
                                 }
+
                             }else if(block.expression is NotEqualTo neq)
                             {
                                 //Console.WriteLine("Debug: Block is a NEQTO");
@@ -69,6 +72,8 @@ namespace Automa.Source.Core
                             break;
                         case Elif elif:
 
+                            Cache.CurrentBlock = elif.Variables;
+
                             elif.Variables.AddRange(Variables.Where(c => !elif.Variables.Contains(c))); // update global var just incase
 
                             if (prevSucc)
@@ -83,6 +88,7 @@ namespace Automa.Source.Core
                                 {
                                     elif.ExecuteBlock();
                                     Variables = elif.Variables.Intersect(Variables).ToList();
+                                    prevSucc = !prevSucc;
                                 }
                             }else if(elif.expression is NotEqualTo NEQ)
                             {
@@ -90,11 +96,14 @@ namespace Automa.Source.Core
                                 {
                                     elif.ExecuteBlock();
                                     Variables = elif.Variables.Intersect(Variables).ToList();
+                                    prevSucc = !prevSucc;
                                 }
                             }
 
                             break;
                         case Else els:
+
+                            Cache.CurrentBlock = els.Variables;
 
                             if (prevSucc)
                             {
@@ -102,6 +111,7 @@ namespace Automa.Source.Core
                             }
 
                             els.ExecuteBlock();
+                            Variables = els.Variables.Intersect(Variables).ToList();
                             break;
                         case RunInstruction run:
 

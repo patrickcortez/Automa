@@ -8,7 +8,7 @@ namespace Automa.Source.Core
 {
     internal class Parser(string[] Tokens)
     {
-        string[] Keywords = ["Write", "Read", "If","Elif","Else"];
+        string[] Keywords = ["Write", "Read", "If","Elif","Else","Run"];
 
         //string[] LogicalOperators = ["==", "!="];
 
@@ -102,7 +102,7 @@ namespace Automa.Source.Core
                     continue;
 
                 }
-                else if (Line.StartsWith(Keywords[3], StringComparison.OrdinalIgnoreCase))
+                else if (Line.StartsWith(Keywords[3], StringComparison.OrdinalIgnoreCase)) // elif
                 { // Elif
                     expr = ExtractExpression(Line.Substring(Keywords[3].Length, Line.Length - Keywords[3].Length));
                     Current = TokenType.Elif;
@@ -114,11 +114,17 @@ namespace Automa.Source.Core
 
                     continue;
                 }
-                else if (Line.StartsWith(Keywords[4], StringComparison.OrdinalIgnoreCase)) {
+                else if (Line.StartsWith(Keywords[4], StringComparison.OrdinalIgnoreCase)) { // else
 
                     Current = TokenType.Else;
                     continue;
 
+                } else if (Line.Contains(Keywords[5], StringComparison.OrdinalIgnoreCase)) // run
+                {
+                    var nLine = Line.Replace(Keywords[5]," ");
+                    var cmd = ExtractCommand(nLine);
+                    Instructions.Add(new RunInstruction(cmd));
+                    continue;
                 }
                 else // Variable Declaration
                 {
@@ -126,13 +132,23 @@ namespace Automa.Source.Core
 
                     //Console.WriteLine("Debug: Current Variable Name: {0} , Value: {1}", newVar.name, newVar.value);
 
-                    if (Variables.Contains(newVar))
+                    if (Variables.Where(c => c.name == newVar.name).Count() > 0)
                     {
-                        int index = Variables.IndexOf(newVar);
+                        var Curr = Variables.FirstOrDefault(c => c.name == newVar.name);
+                        int index = Variables.IndexOf(Curr);
+
+                        Variable value = FindVariable(newVar.value, Variables);
+
+                        if(value is not null)
+                        {
+                            Variables[index] = value;
+                            continue;
+                        }
 
                         //Console.WriteLine("Debug: Current Variable Changed value to: {0} ", newVar.value);
 
                         Variables[index].value = newVar.value;
+                        continue;
                     }
 
                     Variables.Add(newVar);

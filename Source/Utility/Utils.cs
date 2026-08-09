@@ -438,5 +438,47 @@ namespace Automa.Source.Utility
 
             return current;
         }
+
+        public static (string target,string cmd) ExtractCommand(string Line)
+        {
+            StringBuilder token = new();
+            (string target, string cmd) res = new(string.Empty, string.Empty);
+            bool inQoutes = false;
+            foreach(char c in Line)
+            {
+                if((c == '(' || c == ')') && !inQoutes)
+                {
+                    continue;
+                }
+
+                if(c == '=' && !inQoutes)
+                {
+                    res.target = token.ToString();
+                    token.Clear();
+                    continue;
+                }
+
+                if(c == ' ' && !inQoutes)
+                {
+                    continue;
+                }
+                
+                if(c == '"')
+                {
+                    inQoutes = !inQoutes;
+                    continue;
+                }
+
+                token.Append(c);
+            }
+
+            if(token.Length > 0)
+            {
+                res.cmd = token.ToString();
+                token.Clear();
+            }
+
+            return res;
+        }
     }
 }

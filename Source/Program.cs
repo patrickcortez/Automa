@@ -6,7 +6,7 @@ namespace Automa.Source;
 
 public static class Automa
 {
-    public static int Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
         try
         {

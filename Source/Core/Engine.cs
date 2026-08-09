@@ -46,7 +46,7 @@ namespace Automa.Source.Core
                 Parser parse = new(Tokenize());
                
 
-                return parse.Start();
+                return  parse.Start();
             }
             catch(Exception ex)
             {

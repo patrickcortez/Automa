@@ -10,7 +10,7 @@ namespace Automa.Source.Core
     {
         private Dictionary<string, Func<string[], int>> Commands = new() // Dict of string and Func Delegates
         {
-            { "help", (string[] args) => { // Help of user convenience and a cli guide
+            { "help",  (string[] args) => { // Help of user convenience and a cli guide
 
                 Print("Automa SubCommands:");
                 Print("version          - Displays current version of Automa");
@@ -25,10 +25,18 @@ namespace Automa.Source.Core
             },
             {
 
-                "version",(string[] args) => { Print("Automa 0.0.1"); return 0; } // Current Version of Automa
+                "version", (string[] args) => { Print("Automa 0.0.1"); return 0;  } // Current Version of Automa
             }
 
         };
+
+
+        private async Task<int> Exitc(int code)
+        {
+            await Task.Delay(1000);
+            return code;
+        }
+
         public int Start()
         {
             try

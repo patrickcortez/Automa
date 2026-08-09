@@ -103,6 +103,33 @@ namespace Automa.Source.Core
 
                             els.ExecuteBlock();
                             break;
+                        case RunInstruction run:
+
+                            if(run.Properties.Target != string.Empty)
+                            {
+                                Console.WriteLine("Debug: Run Target: {0}", run.Properties.Target);
+                                Variable? curr = Variables.FirstOrDefault(c => c.name == run.Properties.Target);
+                                
+
+                                if(curr is null)
+                                {
+                                    string value =  run.Run();
+                                    curr = new(run.Properties.Target, value);
+
+                                    Variables.Add(curr);
+                                    continue;
+                                }
+
+                                int index = Variables.IndexOf(curr);
+
+                                curr.value =  run.Run();
+
+                                Variables[index] = curr;
+
+                            }
+
+                            run.Run();
+                            break;
                         default:
                             break;
 

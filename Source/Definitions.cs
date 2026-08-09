@@ -1,4 +1,5 @@
 ﻿using Automa.Source.Core;
+using System.Diagnostics;
 
 namespace Automa.Source
 {
@@ -45,7 +46,7 @@ namespace Automa.Source
             //Console.WriteLine("Debug: IF Instructions: {0}", this.Instructions.Count);
             Executor executor = new(this.Instructions, this.Variable);
 
-            return executor.Start();
+            return  executor.Start();
         }
     }
 
@@ -60,7 +61,7 @@ namespace Automa.Source
             //Console.WriteLine("Debug: IF Instructions: {0}", this.Instructions.Count);
             Executor executor = new(this.Instructions, this.Variable);
 
-            return executor.Start();
+            return  executor.Start();
         }
     }
 
@@ -154,6 +155,53 @@ namespace Automa.Source
         }
     }
 
-    //public
+    //Processes
+
+    internal record RunInstruction((string Target,string Cmd) Properties)
+    {
+        public string Run()
+        {
+            string[] cmdPart = Properties.Cmd.Split(' ', 2);
+            string name = cmdPart[0];
+            string args = cmdPart.Length > 1 ? cmdPart[1] : "";
+
+            Process proc = new();
+            proc.StartInfo = new()
+            {
+                FileName=name,
+                Arguments=args,
+                CreateNoWindow = true,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true
+            };
+            
+
+            if (proc.Start()){
+                proc.BeginErrorReadLine();
+                proc.BeginOutputReadLine();
+
+                proc.OutputDataReceived += (_, e) =>
+                {
+                   if(e.Data != null)
+                    {
+                        //Do nothing
+                    }
+                };
+
+                proc.ErrorDataReceived += (_, e) =>
+                {
+                    if (e.Data != null)
+                    {
+                        //Do nothing
+                    }
+                };
+
+                proc.WaitForExit();
+                return $"{proc.ExitCode}";
+            }
+
+            return "1";
+        }
+    }
 
 }

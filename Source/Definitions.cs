@@ -97,7 +97,7 @@ namespace Automa.Source
         public bool Evaluate()
         {
 
-             Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
+             //Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
 
             if(left is VariableExpression Lexpr && right is VariableExpression Rexpr)
             {
@@ -119,7 +119,7 @@ namespace Automa.Source
 
             if(left is VariableExpression Lexpr2 && right is LiteralExpression Rexpr2)
             {
-                Console.WriteLine("Debug: Values: {0} , {1}", Lexpr2.Value.value, Rexpr2.Value);
+                //Console.WriteLine("Debug: Values: {0} , {1}", Lexpr2.Value.value, Rexpr2.Value);
 
                 Variable Nleft = Cache.UpdateVariable(Lexpr2.Value, Cache.CurrentBlock);
 
@@ -159,7 +159,7 @@ namespace Automa.Source
         public bool Evaluate()
         {
 
-            Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
+            //Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
 
             if (left is VariableExpression Lexpr && right is VariableExpression Rexpr)
             {

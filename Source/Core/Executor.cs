@@ -117,7 +117,7 @@ namespace Automa.Source.Core
 
                             if(run.Properties.Target != string.Empty)
                             {
-                                Console.WriteLine("Debug: Run Target: {0}", run.Properties.Target);
+                                //Console.WriteLine("Debug: Run Target: {0}", run.Properties.Target);
                                 Variable? curr = Variables.FirstOrDefault(c => c.name == run.Properties.Target);
                                 
 

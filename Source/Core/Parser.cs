@@ -70,7 +70,7 @@ namespace Automa.Source.Core
                             if (Current == TokenType.If)
                             {
                                 Instructions.Add(new IfBlock(expr, new(BlockInstructions), Variables));
-                                BlockInstructions.Clear();
+                                BlockInstructions.Clear(); // always clear Block Instruction =P, since List is a reference type.
                             }
                             else if (Current == TokenType.Elif)
                             {
@@ -85,7 +85,7 @@ namespace Automa.Source.Core
                         }
                     }
 
-                    inBlock = !inBlock;
+                    inBlock = !inBlock; // move to if later... gonna implement nesting first
                     continue;
 
                 }
@@ -99,6 +99,8 @@ namespace Automa.Source.Core
                     {
                         throw new Exception($"Expression in \"{Line}\" is malformed");
                     }
+
+                    
 
                     continue;
 

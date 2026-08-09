@@ -254,6 +254,10 @@ namespace Automa.Source.Utility
                     continue;
                 }
 
+                if (token.ToString().Contains("Read", StringComparison.OrdinalIgnoreCase)){
+                    token.Clear();
+                }
+
                 if (c == '"')
                 {
                     inQoutes = !inQoutes;
@@ -284,6 +288,21 @@ namespace Automa.Source.Utility
             }
 
             return null;
+        }
+
+        public static string ExpandVariables(string Line,List<Variable> Variables)
+        {
+            foreach(Variable var in Variables)
+            {
+                string Current = "$" + var.name;
+
+                if (Line.Contains(Current))
+                {
+                    Line = Line.Replace(Current, var.value);
+                }
+            }
+
+            return Line;
         }
 
        
@@ -362,6 +381,8 @@ namespace Automa.Source.Utility
                 Expression Left,Right;
                 var Lvar = FindVariable(Properties.Left, Cache.Variables);
                 var Rvar = FindVariable(Properties.right, Cache.Variables);
+
+                //Console.WriteLine("Debug: L {0} , R {1}", Lvar.value, Rvar.value);
 
                 if(Lvar is not null)
                 {

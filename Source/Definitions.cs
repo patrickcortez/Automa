@@ -14,7 +14,9 @@ namespace Automa.Source
         Write,
         Read,
         If,
-        EOP // End of Program
+        Elif,
+        Else,
+        Null
     }
 
     // Print Configuration definition
@@ -32,17 +34,44 @@ namespace Automa.Source
        public string value { get; set; } = value;
     }
 
-    internal record IfBlock(Expression expression, List<object> Instructions, List<Variable> Variables)
+    internal record IfBlock(Expression expression, List<object> Instructions, List<Variable> Variables) // if(condition)
     {
         public List<object> Instructions { get; set; } = Instructions;
 
         public List<Variable> Variable { get; set; } = Variables;
 
-        public int ExecuteIF()
+        public int ExecuteBlock()
         {
-            Console.WriteLine("Debug: IF Instructions: {0}", this.Instructions.Count);
+            //Console.WriteLine("Debug: IF Instructions: {0}", this.Instructions.Count);
             Executor executor = new(this.Instructions, this.Variable);
 
+            return executor.Start();
+        }
+    }
+
+    internal record Elif(Expression expression, List<object> Instructions, List<Variable> Variables) // elif(<condition>)
+    {
+        public List<object> Instructions { get; set; } = Instructions;
+
+        public List<Variable> Variable { get; set; } = Variables;
+
+        public int ExecuteBlock()
+        {
+            //Console.WriteLine("Debug: IF Instructions: {0}", this.Instructions.Count);
+            Executor executor = new(this.Instructions, this.Variable);
+
+            return executor.Start();
+        }
+    }
+
+    internal record Else(List<object> Instructions, List<Variable> Variables)
+    {
+        public List<object> Instructions { get; set; } = Instructions;
+
+        public List<Variable> Variable { get; set; } = Variables;
+        public int ExecuteBlock()
+        {
+            Executor executor = new(Instructions, Variables);
             return executor.Start();
         }
     }
@@ -67,7 +96,7 @@ namespace Automa.Source
         {
 
 
-            Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
+          //  Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
 
             if(left is VariableExpression Lexpr && right is VariableExpression Rexpr)
             {
@@ -76,7 +105,7 @@ namespace Automa.Source
 
             if(left is VariableExpression Lexpr2 && right is LiteralExpression Rexpr2)
             {
-                Console.WriteLine("Debug: Values: {0} , {1}", Lexpr2.Value.value, Rexpr2.Value);
+                //Console.WriteLine("Debug: Values: {0} , {1}", Lexpr2.Value.value, Rexpr2.Value);
                 return Lexpr2.Value.value == Rexpr2.Value;
             }
 
@@ -99,7 +128,7 @@ namespace Automa.Source
         public bool Evaluate()
         {
 
-            Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
+            //Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
 
             if (left is VariableExpression Lexpr && right is VariableExpression Rexpr)
             {

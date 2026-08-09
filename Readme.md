@@ -49,6 +49,17 @@ Write("Result of Task $task")
 
 ```
 
+## CLI Usage:
+
+To use **Automa** in the CommandLine, Simple do:
+
+`./Automa.exe run <path-to-.auto>`
+
+## Installation
+
+> [!NOTE]
+> To be added...
+
 ## License
 
 This project is under the License of *GNU General Public Licesne V3*, see [LICENSE](LICENSE.txt)

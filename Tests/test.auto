@@ -1,0 +1,48 @@
+# Declare comments on a seperate line for now, 
+# Comments besides variables and other instructions
+# Will be supported later...
+
+var = Read("Enter Hi or Hello: ")
+name = "cortez"
+home = "iloilo"
+task = Run("cmd /c ls")
+Write("Hello World")
+Write("How do you do?")
+Write("Your name is $name and you live in $home")
+Write("This is a Write Test!")
+Write("Value of var is $var")
+Write("Result of Task: $task")
+
+If(var == "Hello")
+{
+Write("It is Hello!")
+
+street = "7th"
+
+Write("Nice Street $street")
+
+If(home == "iloilo")
+{
+Write("Nice Home!")
+}
+
+}
+Elif(var == "Hi")
+{
+Write("Now it's Hi")
+}
+Else
+{
+Write("You wrote $var")
+}
+
+If(task == "0")
+{
+Write("Task is successful!")
+}
+Else
+{
+Write("Task Failed!")
+}
+
+Write("Test Done!")

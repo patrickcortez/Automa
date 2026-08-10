@@ -13,7 +13,7 @@ The Following instructions of **Automa**:
 - **Write** : Write to Console.
 - **Read**  : Read Input 
 - **Variable** : Declare variable
-- **If** : If Block
+- **If** : If Block which can be nested
 - **Elif** : Elif/Else if Block
 - **Else** : Else Block
 - **Run** : Run Block for running processes
@@ -33,6 +33,12 @@ country = Read("What is your home origin? ")
 If(country == "USA")
 {
 Write("Good Choice!")
+
+If(name == "Cortez")
+{
+Write("Nice Name")
+}
+
 }
 Elif(country == "Greece")
 {

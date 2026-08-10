@@ -21,6 +21,11 @@ namespace Automa.Source.Core
                     continue;
                 }
 
+                if (line.StartsWith('#')) // Comments '#' 
+                {
+                    continue;
+                }
+
                 Tokens.Add(line);
             }
 

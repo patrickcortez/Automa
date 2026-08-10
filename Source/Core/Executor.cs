@@ -15,7 +15,7 @@ namespace Automa.Source.Core
                     switch (instruction)
                     {
                         case WriteInstruction write:
-                            Console.WriteLine(ExpandVariables(write.Content,Variables));
+                            Console.WriteLine(ExpandVariables(write.Content,(Cache.CurrentBlock != null )? Cache.CurrentBlock: Variables));
                             break;
                         case ReadInstruction read:
                             Variable? current = Utils.FindVariable(read.target, Variables);

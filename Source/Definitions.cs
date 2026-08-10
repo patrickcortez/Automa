@@ -44,6 +44,7 @@ namespace Automa.Source
 
         public int ExecuteBlock()
         {
+           // Console.WriteLine("Amount of VAriable in IF: {0}", Variables.Count);
             //Console.WriteLine("Debug: IF Instructions: {0}", this.Instructions.Count);
             Executor executor = new(this.Instructions, this.Variable);
 

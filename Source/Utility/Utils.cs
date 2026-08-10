@@ -292,6 +292,9 @@ namespace Automa.Source.Utility
 
         public static string ExpandVariables(string Line,List<Variable> Variables)
         {
+
+          //  Console.WriteLine("Debug: Current line being Expanded: {0}", Line);
+
             foreach(Variable var in Variables)
             {
                 string Current = "$" + var.name;

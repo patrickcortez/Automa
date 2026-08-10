@@ -296,17 +296,21 @@ namespace Automa.Source.Core
                             //Console.WriteLine("Debug: Block Instructions {0}", BlockInstructions.Count);
                             if (Current == TokenType.If)
                             {
-                                Instructions.Add(new IfBlock(expr, new(BlockInstructions), Variables));
+                                Instructions.Add(new IfBlock(expr, new(BlockInstructions), new(BlockVariables)));
                                 BlockInstructions.Clear(); // always clear Block Instruction =P, since List is a reference type.
+                                BlockVariables.Clear();
                             }
                             else if (Current == TokenType.Elif)
                             {
-                                Instructions.Add(new Elif(expr, new(BlockInstructions), Variables));
+                                Instructions.Add(new Elif(expr, new(BlockInstructions), new(BlockVariables)));
                                 BlockInstructions.Clear();
-                            }else if(Current == TokenType.Else)
+                                BlockVariables.Clear();
+                            }
+                            else if(Current == TokenType.Else)
                             {
-                                Instructions.Add(new Else(new(BlockInstructions), Variables));
+                                Instructions.Add(new Else(new(BlockInstructions), new(BlockVariables)));
                                 BlockInstructions.Clear();
+                                BlockVariables.Clear();
                             }
 
                         }
@@ -359,6 +363,18 @@ namespace Automa.Source.Core
                     {
                         continue;
                     }
+
+                    if (!inBlock)
+                    {
+                        BlockVariables = new(Variables);
+                    }
+
+                    if (inBlock)
+                    {
+                        BlockInstructions.Add(ParseBlock<IfBlock>(BlockVariables, Line));
+                        continue;
+                    }
+
                     expr = ExtractExpression(Line.Substring(Keywords[3].Length, Line.Length - Keywords[3].Length));
                     Current = TokenType.Elif;
 

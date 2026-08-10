@@ -8,3 +8,34 @@
  |
  V
 [Executor] : Executes all instructions
+
+
+----
+
+if()
+{
+
+Write("Hello")
+
+if(){
+Write("Oh no cuh") # Nested If Statement
+}
+
+}
+elif()
+{
+
+}
+----
+
+[If]
+ |
+ \[Variables]
+ |
+ \[Instructions]
+	|
+	\[If]
+	   |
+	   \[Variables]
+	   |
+	   \[Instructions]

@@ -1,0 +1,13 @@
+Write("Variable Assignment Test")
+
+var = "Trump"
+
+Write("Var old value $var")
+
+new = Read("Enter new value:")
+
+var = new
+
+Write("Var new value: $var")
+
+Write("Test Done!")

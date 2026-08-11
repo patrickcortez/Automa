@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using static Automa.Source.Utility.Utils;
+﻿using static Automa.Source.Utility.Utils;
 
 namespace Automa.Source.Core
 {

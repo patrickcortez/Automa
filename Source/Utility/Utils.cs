@@ -179,11 +179,22 @@ namespace Automa.Source.Utility
 
         }
 
-        public static Variable ExtractVariable(string Line)
+        public static bool isReadAssign(string Statement)
+        {
+            if(Statement.StartsWith("Read(",StringComparison.OrdinalIgnoreCase) && Statement.EndsWith(')'))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public static Variable ExtractVariable(string Line,out AssignmentType type)
         {
             (string name, string value) varContainer = new("", "");
             StringBuilder token = new();
             bool inQoutes = false, parsedEqualSign = false;
+            type = AssignmentType.Variable;
 
             foreach (char c in Line)
             {
@@ -212,6 +223,26 @@ namespace Automa.Source.Utility
                     continue;
                 }
 
+
+
+                if (token.ToString().Contains("Read", StringComparison.OrdinalIgnoreCase) && !inQoutes)
+                {
+                    type = AssignmentType.Read;
+                    token.Clear();
+                    continue;
+                }
+
+                if(token.ToString().Contains("Run",StringComparison.OrdinalIgnoreCase) && !inQoutes)
+                {
+                    type = AssignmentType.Run;
+                    token.Clear();
+                }
+
+                if (c == '(' || c == ')' && !inQoutes)
+                {
+                    continue;
+                }
+
                 token.Append(c);
             }
 
@@ -224,57 +255,39 @@ namespace Automa.Source.Utility
             return new(varContainer.name, varContainer.value);
         }
 
-        public static (string target, string prompt) ExtractRead(string Line)
+        public static bool HasAssignment(string Line) // Assignment signifier
         {
-            (string target, string prompt) ReadContainer = new("", "");
-            StringBuilder token = new();
-            bool inQoutes = false,parsedEqualSign=false;
-
-            foreach(char c in Line)
+            try
             {
-                if (char.IsWhiteSpace(c) && !inQoutes)
-                {
-                    continue;
-                }
+                int Assignment = 0;
 
-                if (c == '=' && !inQoutes)
+                for (int i = 0; i < Line.Length; i++)
                 {
-                    if (parsedEqualSign)
+                    char current = Line[i];
+
+                    if (current == '=')
                     {
-                        throw new Exception("Cannot Declare more than one equal sign!");
+                        Assignment++;
                     }
-                    ReadContainer.target = token.ToString();
-                    token.Clear();
-                    parsedEqualSign = true;
-                    continue;
                 }
 
-                if( c == '(' || c == ')' && !inQoutes)
+                if (Assignment == 1)
                 {
-                    continue;
+                    return true;
                 }
 
-                if (token.ToString().Contains("Read", StringComparison.OrdinalIgnoreCase)){
-                    token.Clear();
-                }
-
-                if (c == '"')
+                if (Assignment > 1)
                 {
-                    inQoutes = !inQoutes;
-                    continue;
+                    throw new Exception("Cannot have more than  1 assignment operator");
                 }
 
-                token.Append(c);
-            }
+                return false;
 
-            if(token.Length > 0)
+            }catch(Exception ex)
             {
-                ReadContainer.prompt = token.ToString();
-                token.Clear();
+                Utils.Print("Assignment Error", ex, new(PrintOptions.Error, true));
+                return false;
             }
-
-            return ReadContainer;
-
         }
 
         public static Variable? FindVariable(string name,List<Variable> Variables)
@@ -308,7 +321,11 @@ namespace Automa.Source.Utility
             return Line;
         }
 
-       
+        public static string? Input(string Prompt)
+        {
+            Console.WriteLine(Prompt);
+            return Console.ReadLine();
+        }
 
         public static Expression? ExtractExpression(string Line)
         {
@@ -382,29 +399,11 @@ namespace Automa.Source.Utility
             if (Properties.op == "==")
             {
                 Expression Left,Right;
-                var Lvar = FindVariable(Properties.Left, Cache.Variables);
-                var Rvar = FindVariable(Properties.right, Cache.Variables);
 
                 //Console.WriteLine("Debug: L {0} , R {1}", Lvar.value, Rvar.value);
-
-                if(Lvar is not null)
-                {
-                    Left = new VariableExpression(Lvar);
-
-                }
-                else
-                {
-                    Left = new LiteralExpression(Properties.Left);
-                }
-
-                if(Rvar is not null)
-                {
-                    Right = new VariableExpression(Rvar);
-                }
-                else
-                {
-                    Right = new LiteralExpression(Properties.right);
-                }
+                // Treat both as literals first
+                Left = new LiteralExpression(Properties.Left);
+                Right = new LiteralExpression(Properties.right);
 
 
                 current = new EqualTo(Left,Right);
@@ -412,27 +411,9 @@ namespace Automa.Source.Utility
             }else if (Properties.op == "!="){
 
                 Expression Left, Right;
-                var Lvar = FindVariable(Properties.Left, Cache.Variables);
-                var Rvar = FindVariable(Properties.right, Cache.Variables);
-
-                if (Lvar is not null)
-                {
-                    Left = new VariableExpression(Lvar);
-
-                }
-                else
-                {
-                    Left = new LiteralExpression(Properties.Left);
-                }
-
-                if (Rvar is not null)
-                {
-                    Right = new VariableExpression(Rvar);
-                }
-                else
-                {
-                    Right = new LiteralExpression(Properties.right);
-                }
+                // Treat both as literals first
+                Left = new LiteralExpression(Properties.Left);
+                Right = new LiteralExpression(Properties.right);
 
 
                 current = new NotEqualTo(Left, Right);

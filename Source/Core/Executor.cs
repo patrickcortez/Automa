@@ -1,4 +1,5 @@
 ﻿using Automa.Source.Utility;
+using Microsoft.VisualBasic;
 using static Automa.Source.Utility.Utils;
 
 namespace Automa.Source.Core
@@ -10,28 +11,77 @@ namespace Automa.Source.Core
             try
             {
                 bool prevSucc = false;
+                
                 foreach (var instruction in Instructions)
                 {
+                   // Cache.Variables = Variables;
                     switch (instruction)
                     {
                         case WriteInstruction write:
-                            Console.WriteLine(ExpandVariables(write.Content,(Cache.CurrentBlock != null )? Cache.CurrentBlock: Variables));
+                            Console.WriteLine(ExpandVariables(write.Content,Variables));
                             break;
-                        case ReadInstruction read:
-                            Variable? current = Utils.FindVariable(read.target, Variables);
+                        case AssignInstruction assignment:
 
-                            if (current is null)
+                            if(assignment.type is VariableAssign var)
                             {
-                                Console.Write(read.Prompt);
-                                current = new(read.target, Console.ReadLine());
-                                Variables.Add(current);
+                                Variable newVariable = var.variable;
+                                Variable? findVariable = FindVariable(newVariable.name,Variables);
+                                Variable? FindValue = FindVariable(newVariable.value, Variables);
+
+                                if(findVariable is not null)
+                                {
+                                    int vIndex = Variables.IndexOf(findVariable);
+
+                                    if(FindValue is not null)
+                                    {
+                                        Variables[vIndex].value = FindValue.value;
+                                        continue;
+                                    }
+
+                                    Variables[vIndex].value = newVariable.value;
+                                    continue;
+                                }
+                                
+                                if(FindValue is not null)
+                                {
+                                    int vIndex = Variables.IndexOf(FindValue);
+
+                                    newVariable.value = Variables[vIndex].value;
+                                }
+
+                                Variables.Add(newVariable);
+                                continue;
+                            }else if(assignment.type is ReadAssign read)
+                            {
+                                Variable? findVariable = FindVariable(read.target, Variables);
+
+                                if(findVariable is not null)
+                                {
+                                    int vIndex = Variables.IndexOf(findVariable);
+
+                                    Variables[vIndex].value = Input(read.Prompt) ?? "";
+                                    continue;
+                                }
+
+                                Variable newVariable = new(read.target, Input(read.Prompt) ?? "");
+                                Variables.Add(newVariable);
+                                continue;
+                            } 
+                            else if (assignment.type is RunAssignment run)
+                            {
+                                Variable? findVariable = FindVariable(run.Properties.Target, Variables);
+
+                                if(findVariable is not null)
+                                {
+                                    int vIndex = Variables.IndexOf(findVariable);
+                                    Variables[vIndex].value = run.Run();
+                                    continue;
+                                }
+
+                                Variables.Add(new(run.Properties.Target, run.Run()));
                                 continue;
                             }
 
-                            int OI = Variables.IndexOf(current);
-                            Console.Write(read.Prompt);
-                            current.value = Console.ReadLine();
-                            Variables[OI] = current;
                             break;
                         case IfBlock block:
 
@@ -42,16 +92,18 @@ namespace Automa.Source.Core
                                 prevSucc = false;
                             }
 
-                            Cache.CurrentBlock = block.Variables;
-                            block.Variables.AddRange(Variables.Where(c => !block.Variables.Contains(c)));
+                            //Cache.CurrentBlock = block.Variables;
+                            block.Variable = Variables;
 
                             if (block.expression is EqualTo eq)
                             {
                                 //Console.WriteLine("Debug: Block is a EQTO");
+                                eq.UpdateVariables(block.Variable);
                                 if (eq.Evaluate())
                                 {
 
                                     //Console.WriteLine("Debug: Block is Executing");
+                                    
                                     block.ExecuteBlock();
                                     prevSucc = !prevSucc;
                                     Variables = block.Variables.Intersect(Variables).ToList();
@@ -60,6 +112,7 @@ namespace Automa.Source.Core
                             }else if(block.expression is NotEqualTo neq)
                             {
                                 //Console.WriteLine("Debug: Block is a NEQTO");
+                                neq.UpdateVariables(block.Variable);
                                 if (neq.Evaluate())
                                 {
                                     //Console.WriteLine("Debug: Block is Executing");
@@ -72,9 +125,9 @@ namespace Automa.Source.Core
                             break;
                         case Elif elif:
 
-                            Cache.CurrentBlock = elif.Variables;
+                            //Cache.CurrentBlock = elif.Variables;
 
-                            elif.Variables.AddRange(Variables.Where(c => !elif.Variables.Contains(c))); // update global var just incase
+                            elif.Variable = Variables; // update global var just incase
 
                             if (prevSucc)
                             {
@@ -83,7 +136,7 @@ namespace Automa.Source.Core
 
                             if (elif.expression is EqualTo EQ)
                             {
-
+                                EQ.UpdateVariables(elif.Variable);
                                 if (EQ.Evaluate())
                                 {
                                     elif.ExecuteBlock();
@@ -92,6 +145,7 @@ namespace Automa.Source.Core
                                 }
                             }else if(elif.expression is NotEqualTo NEQ)
                             {
+                                NEQ.UpdateVariables(elif.Variable);
                                 if (NEQ.Evaluate())
                                 {
                                     elif.ExecuteBlock();
@@ -103,43 +157,17 @@ namespace Automa.Source.Core
                             break;
                         case Else els:
 
-                            Cache.CurrentBlock = els.Variables;
+                            //Cache.CurrentBlock = els.Variables;
 
                             if (prevSucc)
                             {
                                 continue;
                             }
-
+                            els.Variable = Variables;
                             els.ExecuteBlock();
                             Variables = els.Variables.Intersect(Variables).ToList();
                             break;
-                        case RunInstruction run:
 
-                            if(run.Properties.Target != string.Empty)
-                            {
-                                //Console.WriteLine("Debug: Run Target: {0}", run.Properties.Target);
-                                Variable? curr = Variables.FirstOrDefault(c => c.name == run.Properties.Target);
-                                
-
-                                if(curr is null)
-                                {
-                                    string value =  run.Run();
-                                    curr = new(run.Properties.Target, value);
-
-                                    Variables.Add(curr);
-                                    continue;
-                                }
-
-                                int index = Variables.IndexOf(curr);
-
-                                curr.value =  run.Run();
-
-                                Variables[index] = curr;
-
-                            }
-
-                            run.Run();
-                            break;
                         default:
                             break;
 

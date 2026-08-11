@@ -10,7 +10,7 @@ namespace Automa.Source.Utility
 
         public static List<Variable> Variables  { get; set; }
 
-        public static List<Variable> CurrentBlock { get; set; } 
+        public static List<Variable> CurrentBlock { get; set; }
 
         public static Variable UpdateVariable(Variable current,List<Variable> Variables)
         {

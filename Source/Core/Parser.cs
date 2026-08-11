@@ -13,10 +13,9 @@ namespace Automa.Source.Core
 
         //string[] LogicalOperators = ["==", "!="];
 
-        private T? ParseBlock<T>(List<Variable> _Variables,string StartingLine)
+        private T? ParseBlock<T>(string StartingLine)
         {
             List<object> Instructions = new();
-            List<Variable> Variables = _Variables;
             int index = Tokens.IndexOf(StartingLine), depth=0;
             bool inBlock = false;
             string[] SubTokens = Tokens.Skip(index).ToArray();
@@ -73,26 +72,9 @@ namespace Automa.Source.Core
 
                     Instructions.Add(new WriteInstruction(CleanString(Line.Substring(Keywords[0].Length, Line.Length - Keywords[0].Length))));
                 }
-                else if (Line.Contains(Keywords[1], StringComparison.OrdinalIgnoreCase)) //Read
+                else if (Line.StartsWith(Keywords[1], StringComparison.OrdinalIgnoreCase)) //Read
                 {
-                    if (depth > 0)
-                    {
-                        continue;
-                    }
-
-                    var data = ExtractRead(Line);
-
-                    Variable? var = FindVariable(data.target, Variables);
-
-                    if (var is null)
-                    {
-                        var = new(data.target, "");
-                        Variables.Add(var);
-                    }
-
-                    Instructions.Add(new ReadInstruction(data.target, data.prompt));
-                    continue;
-
+                    throw new Exception("Cannot use Read outside of Assignment");
                 }
                 else if (Line.StartsWith(Keywords[2], StringComparison.OrdinalIgnoreCase)) //If
                 {
@@ -103,7 +85,7 @@ namespace Automa.Source.Core
 
                     if (inBlock)
                     {
-                        Instructions.Add(ParseBlock<IfBlock>(Variables, Line));
+                        Instructions.Add(ParseBlock<IfBlock>(Line));
                         continue;
                     }
 
@@ -126,7 +108,7 @@ namespace Automa.Source.Core
 
                     if (inBlock)
                     {
-                        Instructions.Add(ParseBlock<Elif>(Variables, Line));
+                        Instructions.Add(ParseBlock<Elif>(Line));
                     }
 
                     expr = ExtractExpression(Line.Substring(Keywords[3].Length, Line.Length - Keywords[3].Length));
@@ -141,65 +123,47 @@ namespace Automa.Source.Core
                 {
                     if (inBlock)
                     {
-                        Instructions.Add(ParseBlock<Else>(Variables, Line));
+                        Instructions.Add(ParseBlock<Else>(Line));
                         continue;
                     }
                 }
-                else if (Line.Contains(Keywords[5], StringComparison.OrdinalIgnoreCase)) // run
+                else if (Line.StartsWith(Keywords[5], StringComparison.OrdinalIgnoreCase)) // run
+                {
+
+                    throw new Exception("Cannot use Run Outside of Assignment");
+                }
+                else if (HasAssignment(Line)) // Variable Declaration
                 {
                     if (depth > 0)
                     {
                         continue;
                     }
 
+                    
+                    Variable newVar = ExtractVariable(Line, out AssignmentType Atype);
 
-                    var nLine = Line.Replace(Keywords[5], " ");
-                    var cmd = ExtractCommand(nLine);
 
-
-                    Instructions.Add(new RunInstruction(cmd));
-
-                    Variables.Add(new Variable(cmd.target, ""));
-
-                    continue;
-                }
-                else // Variable Declaration
-                {
-                    if (depth > 0)
+                    if (Atype == AssignmentType.Read)
                     {
+
+
+                        Instructions.Add(new AssignInstruction(new ReadAssign(newVar.name, newVar.value)));
                         continue;
                     }
+                    else if (Atype == AssignmentType.Run)
+                    {
 
-                    Variable newVar = ExtractVariable(Line);
+
+                        Instructions.Add(new AssignInstruction(new RunAssignment((newVar.name, newVar.value))));
+                        continue;
+                    }
 
                     //Console.WriteLine("Debug: Current Variable Name: {0} , Value: {1}", newVar.name, newVar.value);
 
-                    if (Variables.Where(c => c.name == newVar.name).Count() > 0)
-                    {
-                        var Curr = Variables.FirstOrDefault(c => c.name == newVar.name);
-                        int sindex = Variables.IndexOf(Curr);
-
-
-
-                        Variable value = FindVariable(newVar.value, Variables);
-
-                        if (value is not null)
-                        {
-                            Variables[sindex] = value;
-                            continue;
-                        }
-
-
-                        //Console.WriteLine("Debug: Current Variable Changed value to: {0} ", newVar.value);
-
-
-                        Variables[sindex].value = newVar.value;
-                        continue;
-                    }
-
-
-                    Variables.Add(newVar);
+                    Instructions.Add(new AssignInstruction(new VariableAssign(newVar)));
                     continue;
+
+
                 }
 
             }
@@ -207,22 +171,22 @@ namespace Automa.Source.Core
 
             if (ParsedType == TokenType.If)
             {
-                IfBlock block = new(expr, Instructions, Variables);
+                IfBlock block = new(expr, Instructions, new());
                 return (T)(object)block;
             }else if(ParsedType == TokenType.Elif)
             {
-                Elif block = new(expr, Instructions, Variables);
+                Elif block = new(expr, Instructions, new());
                 return (T)(object)block;
             }else if(ParsedType == TokenType.Else)
             {
-                Else block = new(Instructions, Variables);
+                Else block = new(Instructions, new());
                 return (T)(object)block;
             }
 
             throw new Exception($"{type.Name} is not a valid block type!");
         }
 
-        private (List<object> Instructions,List<Variable> Variables) Parse()
+        private (List<object> Instructions, List<Variable> Variables) Parse()
         {
             List<object> Instructions = new();
             List<object> BlockInstructions = new();
@@ -233,13 +197,13 @@ namespace Automa.Source.Core
             bool inBlock = false;
             int depth = 0;
 
-            foreach(string Line in Tokens)
+            foreach (string Line in Tokens)
             {
                 Cache.Variables = Variables; // overwrite each iteration
 
                 if (Line.StartsWith(Keywords[0], StringComparison.OrdinalIgnoreCase)) //Write
                 {
-                    if(depth > 0)
+                    if (depth > 0)
                     {
                         continue;
                     }
@@ -252,34 +216,9 @@ namespace Automa.Source.Core
 
                     Instructions.Add(new WriteInstruction(CleanString(Line.Substring(Keywords[0].Length, Line.Length - Keywords[0].Length))));
                 }
-                else if (Line.Contains(Keywords[1], StringComparison.OrdinalIgnoreCase)) //Read
+                else if (Line.StartsWith(Keywords[1], StringComparison.OrdinalIgnoreCase)) //Read
                 {
-                    if (depth > 0)
-                    {
-                        continue;
-                    }
-                    var data = ExtractRead(Line);
-
-                    Variable? var = FindVariable(data.target, Variables);
-
-                    if (var is null && !inBlock)
-                    {
-                        var = new(data.target, "");
-                        Variables.Add(var);
-                    }
-
-                    if (inBlock)
-                    {
-                        BlockInstructions.Add(new ReadInstruction(data.target, data.prompt));
-                        if (var is not null)
-                        {
-                            BlockVariables.Add(var);
-                        }
-                        continue;
-                    }
-
-                    Instructions.Add(new ReadInstruction(data.target, data.prompt));
-                    continue;
+                    throw new Exception("Read cannot be used outside of assignment operations");
                 }
                 else if (Line.StartsWith('{') || Line.StartsWith('}')) // Block Identifiers
                 {
@@ -296,21 +235,19 @@ namespace Automa.Source.Core
                             //Console.WriteLine("Debug: Block Instructions {0}", BlockInstructions.Count);
                             if (Current == TokenType.If)
                             {
-                                Instructions.Add(new IfBlock(expr, new(BlockInstructions), new(BlockVariables)));
+                                Instructions.Add(new IfBlock(expr, new(BlockInstructions), new()));
                                 BlockInstructions.Clear(); // always clear Block Instruction =P, since List is a reference type.
-                                BlockVariables.Clear();
                             }
                             else if (Current == TokenType.Elif)
                             {
-                                Instructions.Add(new Elif(expr, new(BlockInstructions), new(BlockVariables)));
+                                Instructions.Add(new Elif(expr, new(BlockInstructions), new()));
                                 BlockInstructions.Clear();
-                                BlockVariables.Clear();
                             }
-                            else if(Current == TokenType.Else)
+                            else if (Current == TokenType.Else)
                             {
-                                Instructions.Add(new Else(new(BlockInstructions), new(BlockVariables)));
+                                Instructions.Add(new Else(new(BlockInstructions), new()));
                                 BlockInstructions.Clear();
-                                BlockVariables.Clear();
+
                             }
 
                         }
@@ -331,14 +268,11 @@ namespace Automa.Source.Core
                     {
                         continue;
                     }
-                    if (!inBlock)
-                    {
-                        BlockVariables = new(Variables);
-                    }
+
 
                     if (inBlock)
                     {
-                        BlockInstructions.Add(ParseBlock<IfBlock>(BlockVariables, Line));
+                        BlockInstructions.Add(ParseBlock<IfBlock>(Line));
                         continue;
                     }
 
@@ -352,7 +286,7 @@ namespace Automa.Source.Core
                         throw new Exception($"Expression in \"{Line}\" is malformed");
                     }
 
-                    
+
 
                     continue;
 
@@ -364,14 +298,9 @@ namespace Automa.Source.Core
                         continue;
                     }
 
-                    if (!inBlock)
-                    {
-                        BlockVariables = new(Variables);
-                    }
-
                     if (inBlock)
                     {
-                        BlockInstructions.Add(ParseBlock<IfBlock>(BlockVariables, Line));
+                        BlockInstructions.Add(ParseBlock<IfBlock>(Line));
                         continue;
                     }
 
@@ -385,7 +314,8 @@ namespace Automa.Source.Core
 
                     continue;
                 }
-                else if (Line.StartsWith(Keywords[4], StringComparison.OrdinalIgnoreCase)) { // else
+                else if (Line.StartsWith(Keywords[4], StringComparison.OrdinalIgnoreCase))
+                { // else
 
                     if (depth > 0) // depth check
                     {
@@ -395,95 +325,65 @@ namespace Automa.Source.Core
                     Current = TokenType.Else;
                     continue;
 
-                } else if (Line.Contains(Keywords[5], StringComparison.OrdinalIgnoreCase)) // run
-                {
-                    if (depth > 0)
-                    {
-                        continue;
-                    }
-
-
-                    var nLine = Line.Replace(Keywords[5]," ");
-                    var cmd = ExtractCommand(nLine);
-
-                    if (inBlock)
-                    {
-                        BlockInstructions.Add(new RunInstruction(cmd));
-
-                        BlockVariables.Add(new Variable(cmd.target,""));
-                    }
-
-                    Instructions.Add(new RunInstruction(cmd));
-
-                    Variables.Add(new Variable(cmd.target, ""));
-
-                    continue;
                 }
-                else // Variable Declaration
+                else if (Line.StartsWith(Keywords[5], StringComparison.OrdinalIgnoreCase)) // run
+                {
+
+                    throw new Exception("Cannot use Run Outside of Assignment");
+                }
+                else if (HasAssignment(Line)) // Variable Declaration
                 {
                     if (depth > 0)
                     {
                         continue;
                     }
 
-                    Variable newVar = ExtractVariable(Line);
+                    Variable newVar = ExtractVariable(Line, out AssignmentType type);
 
-                    //Console.WriteLine("Debug: Current Variable Name: {0} , Value: {1}", newVar.name, newVar.value);
 
-                    if (Variables.Where(c => c.name == newVar.name).Count() > 0)
+                    if (type == AssignmentType.Read)
                     {
-                        var Curr = Variables.FirstOrDefault(c => c.name == newVar.name);
-                        int index = Variables.IndexOf(Curr);
 
-                        if (!inBlock)
+                        if (inBlock)
                         {
-
-                            Variable value = FindVariable(newVar.value, Variables);
-
-                            if (value is not null)
-                            {
-                                Variables[index] = value;
-                                continue;
-                            }
-                        }
-                        else if(inBlock)
-                        {
-                            Variable value = FindVariable(newVar.value, BlockVariables);
-
-                            if (value is not null)
-                            {
-                                BlockVariables[index] = value;
-                                continue;
-                            }
-                        }
-                        //Console.WriteLine("Debug: Current Variable Changed value to: {0} ", newVar.value);
-
-                        if (inBlock) // Guard clause if were in a Block
-                        {
-                            Curr = BlockVariables.FirstOrDefault(c => c.name == newVar.name);
-                            index = BlockVariables.IndexOf(Curr);
-
-                            BlockVariables[index].value = newVar.value;
+                            BlockInstructions.Add(new AssignInstruction(new ReadAssign(newVar.name, newVar.value)));
                             continue;
                         }
 
-                        Variables[index].value = newVar.value;
+                        Instructions.Add(new AssignInstruction(new ReadAssign(newVar.name, newVar.value)));
+                        continue;
+                    }else if(type == AssignmentType.Run)
+                    {
+                        if (inBlock)
+                        {
+                            BlockInstructions.Add(new AssignInstruction(new RunAssignment((newVar.name, newVar.value))));
+                            continue;
+                        }
+
+                        Instructions.Add(new AssignInstruction(new RunAssignment((newVar.name, newVar.value))));
                         continue;
                     }
+
+                    //Console.WriteLine("Debug: Current Variable Name: {0} , Value: {1}", newVar.name, newVar.value);
 
                     if (inBlock)
                     {
-                        BlockVariables.Add(newVar);
+                        BlockInstructions.Add(new AssignInstruction(new VariableAssign(newVar)));
                         continue;
                     }
 
-                    Variables.Add(newVar);
+
+                    Instructions.Add(new AssignInstruction(new VariableAssign(newVar)));
                     continue;
+
+
                 }
+
+
+
             }
 
-            return (Instructions,Variables);
-
+            return (Instructions, Variables);
         }
 
         public int Start()
@@ -491,7 +391,7 @@ namespace Automa.Source.Core
             try
             {
                 var Data = Parse();
-                Executor exec = new(Data.Instructions, Data.Variables);
+                Executor exec = new(Data.Instructions, new()); // only pass instructions not the entire variables
                 
 
                 return exec.Start();

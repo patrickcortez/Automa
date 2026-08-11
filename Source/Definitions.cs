@@ -1,5 +1,6 @@
 ﻿using Automa.Source.Core;
 using Automa.Source.Utility;
+using System.Data;
 using System.Diagnostics;
 
 namespace Automa.Source
@@ -13,22 +14,32 @@ namespace Automa.Source
 
     internal enum TokenType
     {
-        Write,
-        Read,
         If,
         Elif,
         Else,
         Null
     }
+    internal enum AssignmentType
+    {
+        Variable,
+        Run,
+        Read
+    }
 
     // Print Configuration definition
     internal record PrintConfiguration(PrintOptions option, bool newline);
 
+    // Assigns
 
+    internal abstract record AssignType;
+
+    internal record VariableAssign(Variable variable) : AssignType;
     // Instructions
     internal record WriteInstruction(string Content);
 
-    internal record ReadInstruction(string target,string Prompt);
+    internal record ReadAssign(string target,string Prompt) : AssignType;
+
+    internal record AssignInstruction(AssignType type); 
 
     internal record Variable(string name, string value)
     {
@@ -83,9 +94,15 @@ namespace Automa.Source
 
     internal abstract record Expression();
 
-    internal record VariableExpression(Variable value) : Expression
+    internal record VariableExpression(string VariableName) : Expression
     {
-        public Variable Value { get; set; } = value;
+        private Variable? Value { get; set; }
+
+        public Variable? GetVariable(List<Variable> Variables)
+        {
+            Value = Utils.FindVariable(VariableName, Variables);
+            return Value;
+        }
     }
 
     internal record LiteralExpression(string value) : Expression
@@ -95,131 +112,95 @@ namespace Automa.Source
 
     internal record EqualTo(Expression left,Expression right) : Expression
     {
+        private List<Variable> Variables = new();
+
+        public void UpdateVariables(List<Variable> Updated)
+        {
+            Variables = Updated;
+        }
+
         public bool Evaluate()
         {
+            // Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
 
-             //Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
-
-            if(left is VariableExpression Lexpr && right is VariableExpression Rexpr)
+            if(left is LiteralExpression LitLeft)
             {
-                Variable Nleft = Cache.UpdateVariable(Lexpr.Value, Cache.CurrentBlock);
-                Variable NRight = Cache.UpdateVariable(Rexpr.Value, Cache.CurrentBlock);
-
-                if(Lexpr.value != Nleft)
+                if(right is LiteralExpression LitRight)
                 {
-                    Lexpr = new VariableExpression(Nleft);
-                }
+                    Variable? FindLeft = Utils.FindVariable(LitLeft.value, Variables);
+                    Variable? FindRight = Utils.FindVariable(LitRight.value, Variables);
 
-                if(Rexpr.value != NRight)
-                {
-                    Rexpr = new VariableExpression(NRight);
+                    if(FindLeft != null && FindRight != null)
+                    {
+                        return FindLeft.value == FindRight.value;
+                    }else if(FindLeft != null)
+                    {
+                        return FindLeft.value == LitRight.value;
+                    }else if(FindRight != null)
+                    {
+                        return LitLeft.Value == FindRight.value;
+                    }
+                    else
+                    {
+                        return  LitLeft.value == LitRight.value;
+                    }
                 }
-
-                return Lexpr.Value.value == Rexpr.Value.value;
             }
 
-            if(left is VariableExpression Lexpr2 && right is LiteralExpression Rexpr2)
-            {
-                //Console.WriteLine("Debug: Values: {0} , {1}", Lexpr2.Value.value, Rexpr2.Value);
-
-                Variable Nleft = Cache.UpdateVariable(Lexpr2.Value, Cache.CurrentBlock);
-
-                if (Lexpr2.value != Nleft)
-                {
-                    Lexpr2 = new VariableExpression(Nleft);
-                }
-
-
-                return Lexpr2.Value.value == Rexpr2.Value;
-            }
-
-            if(left is LiteralExpression Lexpr3 && right is VariableExpression Rexpr3)
-            {
-
-                Variable NRight = Cache.UpdateVariable(Rexpr3.Value, Cache.CurrentBlock);
-
-                if (Rexpr3.value != NRight)
-                {
-                    Rexpr = new VariableExpression(NRight);
-                }
-
-                return Lexpr3.Value == Rexpr3.Value.value;
-            }
-
-            if(left is LiteralExpression Lexpr4 && right is LiteralExpression Rexpr4)
-            {
-                return Lexpr4.Value == Rexpr4.Value;
-            }
-
-            throw new Exception("Unknown Expression used");
+            throw new Exception("Unknown Expression used!");
         }
     }
 
     internal record NotEqualTo(Expression left, Expression right) : Expression
     {
+
+        private List<Variable> Variables = new();
+
+        public void UpdateVariables(List<Variable> Updated)
+        {
+            Variables = Updated;
+        }
+
+
         public bool Evaluate()
         {
+            // Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
 
-            //Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
-
-            if (left is VariableExpression Lexpr && right is VariableExpression Rexpr)
+            if (left is LiteralExpression LitLeft)
             {
-
-                Variable Nleft = Cache.UpdateVariable(Lexpr.Value, Cache.CurrentBlock);
-                Variable NRight = Cache.UpdateVariable(Rexpr.Value, Cache.CurrentBlock);
-
-                if (Lexpr.value != Nleft)
+                if (right is LiteralExpression LitRight)
                 {
-                    Lexpr = new VariableExpression(Nleft);
+                    Variable? FindLeft = Utils.FindVariable(LitLeft.value, Variables);
+                    Variable? FindRight = Utils.FindVariable(LitRight.value, Variables);
+
+                    if (FindLeft != null && FindRight != null)
+                    {
+                        return FindLeft.value != FindRight.value;
+                    }
+                    else if (FindLeft != null)
+                    {
+                        return FindLeft.value != LitRight.value;
+                    }
+                    else if (FindRight != null)
+                    {
+                        return LitLeft.Value != FindRight.value;
+                    }
+                    else
+                    {
+                        return LitLeft.value != LitRight.value;
+                    }
                 }
-
-                if (Rexpr.value != NRight)
-                {
-                    Rexpr = new VariableExpression(NRight);
-                }
-
-
-                return Lexpr.Value.value != Rexpr.Value.value;
             }
 
-            if (left is VariableExpression Lexpr2 && right is LiteralExpression Rexpr2)
-            {
-
-                Variable Nleft = Cache.UpdateVariable(Lexpr2.Value, Cache.CurrentBlock);
-
-                if (Lexpr2.value != Nleft)
-                {
-                    Lexpr2 = new VariableExpression(Nleft);
-                }
-
-                return Lexpr2.Value.value != Rexpr2.Value;
-            }
-
-            if (left is LiteralExpression Lexpr3 && right is VariableExpression Rexpr3)
-            {
-
-                Variable NRight = Cache.UpdateVariable(Rexpr3.Value, Cache.CurrentBlock);
-
-                if (Rexpr3.value != NRight)
-                {
-                    Rexpr = new VariableExpression(NRight);
-                }
-
-                return Lexpr3.Value != Rexpr3.Value.value;
-            }
-
-            if (left is LiteralExpression Lexpr4 && right is LiteralExpression Rexpr4)
-            {
-                return Lexpr4.Value != Rexpr4.Value;
-            }
-
-            throw new Exception("Unknown Expression used");
+            throw new Exception("Unknown Expression used!");
         }
-    }
+    
+
+}
 
     //Processes
 
-    internal record RunInstruction((string Target,string Cmd) Properties)
+    internal record RunAssignment((string Target,string Cmd) Properties) : AssignType
     {
         public string Run()
         {
@@ -267,3 +248,4 @@ namespace Automa.Source
     }
 
 }
+

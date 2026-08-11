@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Automa.Source.Utility
 {
-    internal static class Cache
+    internal static class Cache // Unused, might repurpose for later.
     {
         public static bool Debug { get; set; } = false;
 

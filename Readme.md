@@ -4,19 +4,25 @@
 > This project is still under development, more features will come. Interpreter may not be stable yet =P.
 
 **Automa** is a Simple Automation Language developed in C#. **Automa's** over all functionality is for
-automation in your machine, Automa has atleast 7 instructions for automation.
+automation in your machine, Automa has atleast 5 instructions for automation.
 
 ## Instructions
 
 The Following instructions of **Automa**:
 
 - **Write** : Write to Console.
-- **Read**  : Read Input 
-- **Variable** : Declare variable
+- **Assignment** : Declare a variable with different assignment types.
 - **If** : If Block which can be nested
 - **Elif** : Elif/Else if Block
 - **Else** : Else Block
+
+## Assignment Types
+
+The Following are the assignment types:
+
 - **Run** : Run Block for running processes
+- **Read**  : Read Input 
+- **Variable** : Declare variable
 
 ### Example Usage:
 

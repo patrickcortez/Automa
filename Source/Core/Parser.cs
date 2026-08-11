@@ -199,7 +199,7 @@ namespace Automa.Source.Core
 
             foreach (string Line in Tokens)
             {
-                Cache.Variables = Variables; // overwrite each iteration
+
 
                 if (Line.StartsWith(Keywords[0], StringComparison.OrdinalIgnoreCase)) //Write
                 {

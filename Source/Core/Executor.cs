@@ -1,6 +1,4 @@
-﻿using Automa.Source.Utility;
-using Microsoft.VisualBasic;
-using static Automa.Source.Utility.Utils;
+﻿using static Automa.Source.Utility.Utils;
 
 namespace Automa.Source.Core
 {

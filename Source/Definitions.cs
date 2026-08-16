@@ -2,14 +2,62 @@
 using Automa.Source.Utility;
 using System.Data;
 using System.Diagnostics;
+using System.Text;
 
 namespace Automa.Source
 {
-    internal enum PrintOptions
+    internal enum PrintOptions // ConsoleWriteLine Wrapper
     {
         Normal,
         Warning,
         Error
+    }
+
+    internal enum LexerType // Lexer Types
+    {
+        Token_LBrace, // {
+        Token_RBrace, // }
+        Token_SemiColon, // ;
+        Token_Equal, // =
+        Token_LParen, // (
+        Token_RParen, // )
+        Token_Comma, // ,
+        Token_Add, // +
+        Token_Minus, // -
+        TokenString, // Dave123
+        TokenInt, // 123
+        TokenArith, // 2 + 2 - 2
+        Token_Identifier // Write,Read etc...
+    }
+
+    internal struct LexerToken // Lexer Token definition
+    {
+        StringBuilder Token = new(); // Content Storage (Assignment , Argument & Expression values)
+        LexerType TokenType;
+        int Line;
+
+        public LexerToken(LexerType _Type,int _Line,string Content="") // Constructor
+        {
+            Token.Append(Content);
+            TokenType = _Type;
+            Line = _Line;
+        }
+
+        public void Append(string NewContent)
+        {
+
+            if(NewContent.Length == 0)
+            {
+                return;
+            }
+
+            Token.Append(NewContent);
+        }
+
+        public string GetToken()
+        {
+            return Token.ToString();
+        }
     }
 
     internal enum TokenType

@@ -15,7 +15,7 @@ public static class Automa
                 CommandHandler run = new(_cmd: "help");
                 run.Start();
             }
-
+            
             string cmd = args[0].ToLower();
 
             string[] _args = args.Skip(1).ToArray();

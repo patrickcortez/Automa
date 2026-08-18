@@ -7,7 +7,7 @@ using static Automa.Source.Utility.Utils;
 
 namespace Automa.Source.Core
 {
-    internal class Parser(string[] Tokens)
+    internal class Parser(LexerToken[] LexTok,string[]? Tokens = null)
     {
         string[] Keywords = ["Write", "Read", "If","Elif","Else","Run"];
 
@@ -190,8 +190,6 @@ namespace Automa.Source.Core
         {
             List<object> Instructions = new();
             List<object> BlockInstructions = new();
-            List<Variable> Variables = new();
-            List<Variable> BlockVariables = new();
             Expression? expr = null;
             TokenType Current = TokenType.Null;
             bool inBlock = false;
@@ -383,7 +381,129 @@ namespace Automa.Source.Core
 
             }
 
-            return (Instructions, Variables);
+            return (Instructions,null);
+        }
+
+        private List<object> _Parse(LexerToken? Starting = null) // To be continued...
+        {
+            try
+            {
+                List<object> Instructions = new();
+                List<object> BlockInstructions = new();
+                (string content,string type) CC =( "", ""); // Current Content
+                bool inBlock = false, inParen = false,validParen = false,isAssign=false,isLogic=false;
+                int depth = 0, pdepth = 0; // if-block depth and parenthesis depth
+                string CI = "None"; // Current Instruction,
+
+                foreach (LexerToken Current in LexTok)
+                {
+                    LexerType CT = Current.TokenType;
+
+                    // Check Tokens
+                    if (CT is LexerType.Token_Identifier)
+                    {
+                        string ident = Current.GetContent();
+
+                        if (Keywords.Contains(ident))
+                        {
+
+
+                            if (!inParen) { 
+                                if (ident == "Write")
+                                {
+                                    if (!validParen)
+                                    {
+                                    throw new Exception($"Invalid parenthesis on line {Current.Line}");
+                                    }   
+
+                                
+                                
+                                    CI = "Write";
+                                    continue;
+                                }else if(ident == "Read")
+                                {
+                                    CI = "Read";
+                                    continue;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            CI = Current.GetContent();
+                        }
+                    }
+                    else if (CT is LexerType.Token_LParen)
+                    {
+                        if (inParen)
+                        {
+                            pdepth++;
+                            continue;
+                        }
+
+                        inParen = true;
+                        continue;
+                    }
+                    else if (CT is LexerType.Token_RParen)
+                    {
+                        if (depth > 0)
+                        {
+                            depth--;
+                            continue;
+                        }
+
+                        if (inParen)
+                        {
+                            validParen = true;
+                        }
+
+                        inParen = false;
+                        continue;
+                    }
+                    else if (CT is LexerType.Token_SemiColon)
+                    {
+                        if (inParen)
+                        {
+                            throw new Exception($"Missing Closing Parenthesis on {Current.Line}");
+                        }
+
+                        if (CI is "Write")
+                        {
+                            Instructions.Add(new WriteInstruction(CC.content));
+                        }
+                        else if(CI is "Read" )
+                        {
+                            if (!isAssign)
+                            {
+                                Instructions.Add(new AssignInstruction(new ReadAssign("null", CC.content)));
+                                continue;
+                            }
+
+                            Instructions.Add(new AssignInstruction(new ReadAssign(CI,CC.content)));
+                            continue;
+                        }
+
+                        CI = string.Empty; // erase CI for the next...
+                        CC = ("", "");
+
+                    }else if(CT is LexerType.TokenString or LexerType.TokenInt) // Integer or String literals
+                    {
+                        if(CT is LexerType.TokenInt)
+                        {
+                            CC = (Current.GetContent(), "int");
+                            continue;
+                        }
+
+                        CC = (Current.GetContent(),"string");
+                        continue;
+                    }
+                }
+
+                return Instructions;
+            }catch(Exception ex)
+            {
+                Console.WriteLine("Parsing Error; {0}", ex);
+                return null;
+            }
         }
 
         public int Start()
@@ -391,6 +511,9 @@ namespace Automa.Source.Core
             try
             {
                 var Data = Parse();
+
+                var _Data = _Parse();
+
                 Executor exec = new(Data.Instructions, new()); // only pass instructions not the entire variables
                 
 

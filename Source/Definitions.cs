@@ -39,13 +39,13 @@ namespace Automa.Source
 
     internal struct LexerToken // Lexer Token definition
     {
-        StringBuilder Token = new(); // Content Storage (Assignment , Argument & Expression values)
-        LexerType TokenType;
-        int Line;
+        public StringBuilder Content { get; set; } = new(); // Content Storage (Assignment , Argument & Expression values)
+        public LexerType TokenType { get; set; }
+        public readonly int Line { get; }
 
-        public LexerToken(LexerType _Type,int _Line,string Content="") // Constructor
+        public LexerToken(LexerType _Type,int _Line,string _Content="") // Constructor
         {
-            Token.Append(Content);
+            Content.Append(_Content);
             TokenType = _Type;
             Line = _Line;
         }
@@ -58,12 +58,12 @@ namespace Automa.Source
                 return;
             }
 
-            Token.Append(NewContent);
+            Content.Append(NewContent);
         }
 
-        public string GetToken()
+        public string GetContent()
         {
-            return Token.ToString();
+            return Content.ToString();
         }
     }
 

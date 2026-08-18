@@ -2,12 +2,17 @@
 
 namespace Automa.Source.Core
 {
-    internal class Executor(List<object> Instructions, List<Variable> Variables)
+    internal class Executor(List<object> Instructions, List<Variable>? Variables = null)
     {
         public int Start()
         {
             try
             {
+                if(Variables is null) // instantiate once null
+                {
+                    Variables = new();
+                }
+
                 bool prevSucc = false;
                 
                 foreach (var instruction in Instructions)

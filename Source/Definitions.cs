@@ -13,6 +13,12 @@ namespace Automa.Source
         Error
     }
 
+    internal enum VariableType
+    {
+        String,
+        Int
+    }
+
     internal enum LexerType // Lexer Types
     {
         Token_LBrace, // {
@@ -27,7 +33,8 @@ namespace Automa.Source
         TokenString, // Dave123
         TokenInt, // 123
         TokenArith, // 2 + 2 - 2
-        Token_Identifier // Write,Read etc...
+        Token_Identifier, // Write,Read etc...
+        Token_None // Default value;
     }
 
     internal struct LexerToken // Lexer Token definition
@@ -89,10 +96,12 @@ namespace Automa.Source
 
     internal record AssignInstruction(AssignType type); 
 
-    internal record Variable(string name, string value)
+    internal record Variable(string _name, string _value,VariableType _type = VariableType.String)
     {
-       public string name { get; set; } = name;
-       public string value { get; set; } = value;
+       public string name { get; set; } = _name;
+       public string value { get; set; } = _value;
+
+        public VariableType type = _type;
     }
 
     internal record IfBlock(Expression expression, List<object> Instructions, List<Variable> Variables) // if(condition)

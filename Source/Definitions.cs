@@ -32,6 +32,7 @@ namespace Automa.Source
         Token_Minus, // -
         TokenString, // Dave123
         TokenInt, // 123
+        Token_Not, // !
         TokenArith, // 2 + 2 - 2
         Token_Identifier, // Write,Read etc...
         Token_None // Default value;

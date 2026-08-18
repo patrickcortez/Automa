@@ -185,6 +185,10 @@ namespace Automa.Source.Core
                             {
                                 Tokens.Add(new(LexerType.Token_Minus, LineNo));
                                 continue;
+                            }else if(c is '!')
+                            {
+                                Tokens.Add(new(LexerType.Token_Not, LineNo));
+                                continue;
                             }
                         }
                         else if (isInQoutes) // String Literal
@@ -246,7 +250,7 @@ namespace Automa.Source.Core
                     return 1;
                 }
 
-                Parser parse = new(Tokenize()); // TODO: Update Parser to recieve LexerTokens.
+                Parser parse = new(_Tokenize() ?? throw new Exception("Lexer Error: Empty Tokens!"),Tokenize()); // TODO: Update Parser to recieve LexerTokens.
                
 
                 return  parse.Start();

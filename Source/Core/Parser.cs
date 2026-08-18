@@ -391,53 +391,78 @@ namespace Automa.Source.Core
                 List<object> Instructions = new();
                 List<object> BlockInstructions = new();
                 (string content,string type) CC =( "", ""); // Current Content
-                bool inBlock = false, inParen = false,validParen = false,isAssign=false,isLogic=false;
+                bool inBlock = false,
+                    inParen = false,
+                    validParen = false,
+                    isAssign = false;
                 int depth = 0, pdepth = 0; // if-block depth and parenthesis depth
                 string CI = "None"; // Current Instruction,
+                LexerType prevTok = LexerType.Token_None;
+                string LOP = "", CB = ""; // Logical operator and Current Block
 
-                foreach (LexerToken Current in LexTok)
+                LexerToken[] _Tokens = LexTok;
+                Expression? expr = null;
+
+                int Sindex = 0;
+                if(Starting is not null) // Recursion
+                {
+                    Sindex = Array.IndexOf(LexTok,Starting);
+                    _Tokens = LexTok.Skip(Sindex).ToArray();
+                }
+
+
+                foreach (LexerToken Current in _Tokens)
                 {
                     LexerType CT = Current.TokenType;
 
                     // Check Tokens
                     if (CT is LexerType.Token_Identifier)
                     {
+                        prevTok = CT;
                         string ident = Current.GetContent();
 
                         if (Keywords.Contains(ident))
                         {
+                            CI = ident;
+                            
 
-
-                            if (!inParen) { 
-                                if (ident == "Write")
-                                {
-                                    if (!validParen)
-                                    {
-                                    throw new Exception($"Invalid parenthesis on line {Current.Line}");
-                                    }   
-
-                                
-                                
-                                    CI = "Write";
-                                    continue;
-                                }else if(ident == "Read")
-                                {
-                                    CI = "Read";
-                                    continue;
-                                }
+                            if(CI is "If" or "Elif" or "Else" && depth == 9)
+                            {
+                                CB = CI;
                             }
+
+                            continue;
                         }
                         else
                         {
-                            CI = Current.GetContent();
+                            if(isAssign && inParen)
+                            {
+                                throw new Exception($"Cannot Assign inside parenthesis! Error on Line: {Current.Line}");
+                            }
+
+                            if(isAssign || inParen)
+                            {
+                                CC = (ident, "Identifier");
+                                continue;
+                            }
+
+                            CI = ident;
+                            continue;
                         }
+                        
                     }
                     else if (CT is LexerType.Token_LParen)
                     {
+                        prevTok = CT;
                         if (inParen)
                         {
                             pdepth++;
                             continue;
+                        }
+
+                        if (validParen)
+                        {
+                            validParen = false;
                         }
 
                         inParen = true;
@@ -445,6 +470,7 @@ namespace Automa.Source.Core
                     }
                     else if (CT is LexerType.Token_RParen)
                     {
+                        prevTok = CT;
                         if (depth > 0)
                         {
                             depth--;
@@ -456,11 +482,13 @@ namespace Automa.Source.Core
                             validParen = true;
                         }
 
+
                         inParen = false;
                         continue;
                     }
                     else if (CT is LexerType.Token_SemiColon)
                     {
+                        prevTok = CT;
                         if (inParen)
                         {
                             throw new Exception($"Missing Closing Parenthesis on {Current.Line}");
@@ -468,26 +496,215 @@ namespace Automa.Source.Core
 
                         if (CI is "Write")
                         {
-                            Instructions.Add(new WriteInstruction(CC.content));
-                        }
-                        else if(CI is "Read" )
-                        {
-                            if (!isAssign)
+                            if (!validParen)
                             {
-                                Instructions.Add(new AssignInstruction(new ReadAssign("null", CC.content)));
+                                throw new Exception($"Missing Left parenthesis on Line {Current.Line}");
+                            }
+
+                            if (inBlock && depth == 0)
+                            {
+                                BlockInstructions.Add(new WriteInstruction(CC.content));
+
+                                //reset all before proceeding to the next
+
+                                CI = string.Empty; // erase CI for the next...
+                                CC = ("", "");
+                                validParen = false;
+                                isAssign = false;
+
                                 continue;
                             }
 
+                            if(!inBlock && depth == 0)
+                            {
+                                Instructions.Add(new WriteInstruction(CC.content));
+
+                                //reset all before proceeding to the next
+
+                                CI = string.Empty; // erase CI for the next...
+                                CC = ("", "");
+                                validParen = false;
+                                isAssign = false;
+
+                                continue;
+                            }
+
+                        }
+                        else if(CI is "Read" )
+                        {
+                            if (!validParen)
+                            {
+                                throw new Exception($"Missing Left parenthesis on Line {Current.Line}");
+                            }
+
+                            if (!isAssign)
+                            {
+
+                                if (inBlock && depth == 0)
+                                {
+                                    BlockInstructions.Add(new AssignInstruction(new ReadAssign("null", CC.content)));
+
+                                    //reset all before proceeding to the next
+
+                                    CI = string.Empty; // erase CI for the next...
+                                    CC = ("", "");
+                                    validParen = false;
+                                    isAssign = false;
+
+                                    continue;
+                                }
+
+                                if(!inBlock && depth is 0)
+                                {
+                                    Instructions.Add(new AssignInstruction(new ReadAssign("null", CC.content)));
+
+                                    //reset all before proceeding to the next
+
+                                    CI = string.Empty; // erase CI for the next...
+                                    CC = ("", "");
+                                    validParen = false;
+                                    isAssign = false;
+
+                                    continue;
+                                }
+
+
+                            }
+
+
+                            if (inBlock && depth == 0)
+                            {
+                                BlockInstructions.Add(new AssignInstruction(new ReadAssign(CI, CC.content)));
+                            }
+
+                            if(!inBlock && depth == 0)
+                            {
                             Instructions.Add(new AssignInstruction(new ReadAssign(CI,CC.content)));
                             continue;
+                            }
+
+                        }
+                        else if(CI is "Run")
+                        {
+                            if (!validParen)
+                            {
+                                throw new Exception($"Missing Left parenthesis on Line {Current.Line}");
+                            }
+
+                            if (!isAssign)
+                            {
+
+                                if(CC.type == "identifier")
+                                {
+                                    throw new Exception($"Run Args must be in string! Error on Line: {Current.Line}");
+                                }
+
+                                if (inBlock && depth == 0)
+                                {
+                                    BlockInstructions.Add(new AssignInstruction(new RunAssignment(("null", CC.content))));
+
+                                    //reset all before proceeding to the next
+
+                                    CI = string.Empty; // erase CI for the next...
+                                    CC = ("", "");
+                                    validParen = false;
+                                    isAssign = false;
+
+                                    continue;
+                                }
+
+                                if(!inBlock && depth == 0)
+                                {
+                                    Instructions.Add(new AssignInstruction(new RunAssignment(("null",CC.content))));
+
+                                    //reset all before proceeding to the next
+
+                                    CI = string.Empty; // erase CI for the next...
+                                    CC = ("", "");
+                                    validParen = false;
+                                    isAssign = false;
+
+                                    continue;
+                                }
+
+
+                            }
+
+                            if (inBlock && depth == 0)
+                            {
+                                BlockInstructions.Add(new AssignInstruction(new RunAssignment((CI, CC.content))));
+
+                                //reset all before proceeding to the next
+
+                                CI = string.Empty; // erase CI for the next...
+                                CC = ("", "");
+                                validParen = false;
+                                isAssign = false;
+
+                                continue;
+                            }
+
+                            if(!inBlock && depth == 0)
+                            {
+                            Instructions.Add(new AssignInstruction(new RunAssignment((CI, CC.content))));
+
+
+                                //reset all before proceeding to the next
+
+                                CI = string.Empty; // erase CI for the next...
+                                CC = ("", "");
+                                validParen = false;
+                                isAssign = false;
+
+                                continue;
+                            }
+
+                        }
+                        else
+                        {
+                            VariableType _type = VariableType.String;
+
+                            if(CC.type == "int")
+                            {
+                                _type = VariableType.Int;
+                            }
+
+                            if (inBlock && depth == 0)
+                            {
+                                BlockInstructions.Add(new AssignInstruction(new VariableAssign(new(CI, CC.content,_type))));
+
+                                //reset all before proceeding to the next
+
+                                CI = string.Empty; // erase CI for the next...
+                                CC = ("", "");
+                                validParen = false;
+                                isAssign = false;
+
+                                continue;
+                            }
+
+                            if(!inBlock && depth == 0)
+                            {
+                                Instructions.Add(new AssignInstruction(new VariableAssign(new(CI, CC.content, _type))));
+
+                                //reset all before proceeding to the next
+
+                                CI = string.Empty; // erase CI for the next...
+                                CC = ("", "");
+                                validParen = false;
+                                isAssign = false;
+
+                                continue;
+                            }
                         }
 
-                        CI = string.Empty; // erase CI for the next...
-                        CC = ("", "");
 
-                    }else if(CT is LexerType.TokenString or LexerType.TokenInt) // Integer or String literals
+
+                    }
+                    else if(CT is LexerType.TokenString or LexerType.TokenInt) // Integer or String literals
                     {
-                        if(CT is LexerType.TokenInt)
+                        prevTok = CT;
+                        if (CT is LexerType.TokenInt)
                         {
                             CC = (Current.GetContent(), "int");
                             continue;
@@ -496,6 +713,56 @@ namespace Automa.Source.Core
                         CC = (Current.GetContent(),"string");
                         continue;
                     }
+                    else if(CT is LexerType.Token_Equal)
+                    {
+                        prevTok = CT;
+                        if (isAssign)
+                        {
+                            LOP = "EQ";
+
+                            isAssign = false;
+                            continue;
+                        }
+
+                        if(prevTok == LexerType.Token_Not)
+                        {
+                            LOP = "NEQ";
+                            continue;
+                        }
+
+                        isAssign = true;
+                        continue;
+                    }else if(CT is LexerType.Token_LBrace)
+                    {
+                        prevTok = LexerType.Token_LBrace;
+                        if (inBlock)
+                        {
+                            depth++;
+                            continue;
+                        }
+
+                        inBlock = true;
+                        continue;
+                    }else if(CT is LexerType.Token_RBrace)
+                    {
+                        prevTok = LexerType.Token_RBrace;
+                        if (inBlock && depth > 0)
+                        {
+                            depth--;
+                            continue;
+                        }
+
+                        // Add IF, Elif, and shi to instru CUH
+
+                        if(CB.Length > 0)
+                        {
+                            CB = "";
+                        }
+
+
+                        inBlock = false;
+                    }
+                    prevTok = CT;
                 }
 
                 return Instructions;

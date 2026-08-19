@@ -1,6 +1,7 @@
 ﻿using Automa.Source.Utility;
 using System;
 using System.Collections.Generic;
+using System.Runtime;
 using System.Text;
 using System.Threading.Tasks.Dataflow;
 using static Automa.Source.Utility.Utils;
@@ -13,376 +14,6 @@ namespace Automa.Source.Core
 
         //string[] LogicalOperators = ["==", "!="];
 
-        private T? ParseBlock<T>(string StartingLine)
-        {
-            List<object> Instructions = new();
-            int index = Tokens.IndexOf(StartingLine), depth=0;
-            bool inBlock = false;
-            string[] SubTokens = Tokens.Skip(index).ToArray();
-            Expression? expr = null;
-            Type type = typeof(T);
-
-            TokenType ParsedType = TokenType.Null;
-
-            if(type == typeof(IfBlock))
-            {
-                ParsedType = TokenType.If;
-            }else if(type == typeof(Elif))
-            {
-                ParsedType = TokenType.Elif;
-            }else if(type == typeof(Else))
-            {
-                ParsedType = TokenType.Else;
-            }
-
-
-            for (int i = 0; i < SubTokens.Length; i++)
-            {
-                string Line = SubTokens[i];
-
-                if (Line.StartsWith('{') || Line.StartsWith('}'))
-                {
-                    if (inBlock)
-                    {
-                        if (Line.StartsWith('{') && depth == 0)
-                        {
-                            depth++;
-                            continue;
-                        }
-
-                        if (Line.StartsWith('}') && depth == 0)
-                        {
-                            break;
-                        }
-                        else
-                        {
-                            depth--;
-                        }
-                    }
-
-                    inBlock = !inBlock;
-                    continue;
-                }
-                else if (Line.StartsWith(Keywords[0], StringComparison.OrdinalIgnoreCase)) // Write
-                {
-                    if (depth > 0)
-                    {
-                        continue;
-                    }
-
-                    Instructions.Add(new WriteInstruction(CleanString(Line.Substring(Keywords[0].Length, Line.Length - Keywords[0].Length))));
-                }
-                else if (Line.StartsWith(Keywords[1], StringComparison.OrdinalIgnoreCase)) //Read
-                {
-                    throw new Exception("Cannot use Read outside of Assignment");
-                }
-                else if (Line.StartsWith(Keywords[2], StringComparison.OrdinalIgnoreCase)) //If
-                {
-                    if (depth > 0) // Depth Check
-                    {
-                        continue;
-                    }
-
-                    if (inBlock)
-                    {
-                        Instructions.Add(ParseBlock<IfBlock>(Line));
-                        continue;
-                    }
-
-                    expr = ExtractExpression(Line.Substring(Keywords[2].Length, Line.Length - Keywords[2].Length));
-
-                    if (expr is null)
-                    {
-                        throw new Exception($"Expression in \"{Line}\" is malformed");
-                    }
-
-                    continue;
-
-                }
-                else if (Line.StartsWith(Keywords[3], StringComparison.OrdinalIgnoreCase)) // elif
-                { // Elif
-                    if (depth > 0) // depth check
-                    {
-                        continue;
-                    }
-
-                    if (inBlock)
-                    {
-                        Instructions.Add(ParseBlock<Elif>(Line));
-                    }
-
-                    expr = ExtractExpression(Line.Substring(Keywords[3].Length, Line.Length - Keywords[3].Length));
-
-                    if (expr is null)
-                    {
-                        throw new Exception($"Expression in \"{Line}\" is malformed");
-                    }
-
-                    continue;
-                }else if (Line.StartsWith("Else", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (inBlock)
-                    {
-                        Instructions.Add(ParseBlock<Else>(Line));
-                        continue;
-                    }
-                }
-                else if (Line.StartsWith(Keywords[5], StringComparison.OrdinalIgnoreCase)) // run
-                {
-
-                    throw new Exception("Cannot use Run Outside of Assignment");
-                }
-                else if (HasAssignment(Line)) // Variable Declaration
-                {
-                    if (depth > 0)
-                    {
-                        continue;
-                    }
-
-                    
-                    Variable newVar = ExtractVariable(Line, out AssignmentType Atype);
-
-
-                    if (Atype == AssignmentType.Read)
-                    {
-
-
-                        Instructions.Add(new AssignInstruction(new ReadAssign(newVar.name, newVar.value)));
-                        continue;
-                    }
-                    else if (Atype == AssignmentType.Run)
-                    {
-
-
-                        Instructions.Add(new AssignInstruction(new RunAssignment((newVar.name, newVar.value))));
-                        continue;
-                    }
-
-                    //Console.WriteLine("Debug: Current Variable Name: {0} , Value: {1}", newVar.name, newVar.value);
-
-                    Instructions.Add(new AssignInstruction(new VariableAssign(newVar)));
-                    continue;
-
-
-                }
-
-            }
-
-
-            if (ParsedType == TokenType.If)
-            {
-                IfBlock block = new(expr, Instructions, new());
-                return (T)(object)block;
-            }else if(ParsedType == TokenType.Elif)
-            {
-                Elif block = new(expr, Instructions, new());
-                return (T)(object)block;
-            }else if(ParsedType == TokenType.Else)
-            {
-                Else block = new(Instructions, new());
-                return (T)(object)block;
-            }
-
-            throw new Exception($"{type.Name} is not a valid block type!");
-        }
-
-        private (List<object> Instructions, List<Variable> Variables) Parse()
-        {
-            List<object> Instructions = new();
-            List<object> BlockInstructions = new();
-            Expression? expr = null;
-            TokenType Current = TokenType.Null;
-            bool inBlock = false;
-            int depth = 0;
-
-            foreach (string Line in Tokens)
-            {
-
-
-                if (Line.StartsWith(Keywords[0], StringComparison.OrdinalIgnoreCase)) //Write
-                {
-                    if (depth > 0)
-                    {
-                        continue;
-                    }
-
-                    if (inBlock)
-                    {
-                        BlockInstructions.Add(new WriteInstruction(CleanString(Line.Substring(Keywords[0].Length, Line.Length - Keywords[0].Length))));
-                        continue;
-                    }
-
-                    Instructions.Add(new WriteInstruction(CleanString(Line.Substring(Keywords[0].Length, Line.Length - Keywords[0].Length))));
-                }
-                else if (Line.StartsWith(Keywords[1], StringComparison.OrdinalIgnoreCase)) //Read
-                {
-                    throw new Exception("Read cannot be used outside of assignment operations");
-                }
-                else if (Line.StartsWith('{') || Line.StartsWith('}')) // Block Identifiers
-                {
-                    if (inBlock)
-                    {
-                        if (Line.StartsWith('{'))
-                        {
-                            depth++;
-                            continue;
-                        }
-
-                        if (Line.StartsWith('}') && depth == 0)
-                        {
-                            //Console.WriteLine("Debug: Block Instructions {0}", BlockInstructions.Count);
-                            if (Current == TokenType.If)
-                            {
-                                Instructions.Add(new IfBlock(expr, new(BlockInstructions), new()));
-                                BlockInstructions.Clear(); // always clear Block Instruction =P, since List is a reference type.
-                            }
-                            else if (Current == TokenType.Elif)
-                            {
-                                Instructions.Add(new Elif(expr, new(BlockInstructions), new()));
-                                BlockInstructions.Clear();
-                            }
-                            else if (Current == TokenType.Else)
-                            {
-                                Instructions.Add(new Else(new(BlockInstructions), new()));
-                                BlockInstructions.Clear();
-
-                            }
-
-                        }
-                        else
-                        {
-                            depth--;
-                            continue;
-                        }
-                    }
-
-                    inBlock = !inBlock; // move to if later... gonna implement nesting first
-                    continue;
-
-                }
-                else if (Line.StartsWith(Keywords[2], StringComparison.OrdinalIgnoreCase)) //If
-                {
-                    if (depth > 0)
-                    {
-                        continue;
-                    }
-
-
-                    if (inBlock)
-                    {
-                        BlockInstructions.Add(ParseBlock<IfBlock>(Line));
-                        continue;
-                    }
-
-                    expr = ExtractExpression(Line.Substring(Keywords[2].Length, Line.Length - Keywords[2].Length));
-                    Current = TokenType.If;
-
-
-
-                    if (expr is null)
-                    {
-                        throw new Exception($"Expression in \"{Line}\" is malformed");
-                    }
-
-
-
-                    continue;
-
-                }
-                else if (Line.StartsWith(Keywords[3], StringComparison.OrdinalIgnoreCase)) // elif
-                { // Elif
-                    if (depth > 0) // depth check
-                    {
-                        continue;
-                    }
-
-                    if (inBlock)
-                    {
-                        BlockInstructions.Add(ParseBlock<IfBlock>(Line));
-                        continue;
-                    }
-
-                    expr = ExtractExpression(Line.Substring(Keywords[3].Length, Line.Length - Keywords[3].Length));
-                    Current = TokenType.Elif;
-
-                    if (expr is null)
-                    {
-                        throw new Exception($"Expression in \"{Line}\" is malformed");
-                    }
-
-                    continue;
-                }
-                else if (Line.StartsWith(Keywords[4], StringComparison.OrdinalIgnoreCase))
-                { // else
-
-                    if (depth > 0) // depth check
-                    {
-                        continue;
-                    }
-
-                    Current = TokenType.Else;
-                    continue;
-
-                }
-                else if (Line.StartsWith(Keywords[5], StringComparison.OrdinalIgnoreCase)) // run
-                {
-
-                    throw new Exception("Cannot use Run Outside of Assignment");
-                }
-                else if (HasAssignment(Line)) // Variable Declaration
-                {
-                    if (depth > 0)
-                    {
-                        continue;
-                    }
-
-                    Variable newVar = ExtractVariable(Line, out AssignmentType type);
-
-
-                    if (type == AssignmentType.Read)
-                    {
-
-                        if (inBlock)
-                        {
-                            BlockInstructions.Add(new AssignInstruction(new ReadAssign(newVar.name, newVar.value)));
-                            continue;
-                        }
-
-                        Instructions.Add(new AssignInstruction(new ReadAssign(newVar.name, newVar.value)));
-                        continue;
-                    }else if(type == AssignmentType.Run)
-                    {
-                        if (inBlock)
-                        {
-                            BlockInstructions.Add(new AssignInstruction(new RunAssignment((newVar.name, newVar.value))));
-                            continue;
-                        }
-
-                        Instructions.Add(new AssignInstruction(new RunAssignment((newVar.name, newVar.value))));
-                        continue;
-                    }
-
-                    //Console.WriteLine("Debug: Current Variable Name: {0} , Value: {1}", newVar.name, newVar.value);
-
-                    if (inBlock)
-                    {
-                        BlockInstructions.Add(new AssignInstruction(new VariableAssign(newVar)));
-                        continue;
-                    }
-
-
-                    Instructions.Add(new AssignInstruction(new VariableAssign(newVar)));
-                    continue;
-
-
-                }
-
-
-
-            }
-
-            return (Instructions,null);
-        }
 
         // Expression handling: logical or Arithmetic. Currently its Just Logical (for now)
         private Expression? ParseExpression(List<LexerToken> Tokens)
@@ -475,17 +106,21 @@ namespace Automa.Source.Core
 
                 Type type = typeof(T);
                 List<object> Instructions = new();
+                List<LexerToken> expression = new();
                 int StartingIndex = LexTok.IndexOf(Starting);
                 Expression? expr = null;
                 LexerType? PrevTok = null;
-                bool inParen = false,
+                bool inBlock = false, 
+                        inParen = false,
                         validParen = false,
                         parseExpression = false,
+                        
                         isAssign = false;
                 int depth = 0, pdepth = 0; // brace depth and parenthesis depth
 
-                string CurrentInstruction = "";
-                (string value, string type) CurrentContent;
+                string CurrentInstruction = "",
+                        CurrentBlock = "";
+                (string value, string type) CurrentContent = ("","");
 
                 List<LexerToken> Toks = LexTok.Skip(StartingIndex).ToList();
 
@@ -493,10 +128,45 @@ namespace Automa.Source.Core
                 {
                     LexerType CurrentType = Current.TokenType;
 
+                    // Expression Handling
+                    if (parseExpression && CurrentType is not LexerType.Token_RBrace)
+                    {
+                        if(depth > 0)
+                        {
+                            continue;
+                        }
+                        expression.Add(Current);
+                        continue;
+                    }
+                    else if(parseExpression && CurrentType is LexerType.Token_RBrace)
+                    {
+                        if (depth > 0)
+                        {
+                            continue;
+                        }
+                        expr = ParseExpression(expression);
+                        parseExpression = false;
+                        continue;
+                    }
 
+                    
+                    // Determine if we're entering an Expression
+                    if((inBlock && PrevTok is LexerType.Token_Identifier ) && CurrentType is LexerType.Token_LParen && !parseExpression)
+                    {
+                        if (depth > 0)
+                        {
+                            continue;
+                        }
+                        parseExpression = true;
+                        continue;
+                    }
 
                     if (CurrentType is LexerType.Token_Identifier) // Instructions or variable decl
                     {
+                        if (depth > 1)
+                        {
+                            continue;
+                        }
                         PrevTok = CurrentType;
                         string content = Current.GetContent();
 
@@ -505,26 +175,68 @@ namespace Automa.Source.Core
                             throw new Exception($"Cannot assign inside parenthesis, at line: {Current.Line}");
                         }
 
-                        if (Keywords.Contains(content))
+                        // If-else control flow.
+                        if (content is "If" or "Elif" or "Else")
                         {
-                            if (content is "If")
+                            if (inBlock)
                             {
-                                Instructions.Add(ParseStatement<IfBlock>(Current) ?? throw new Exception($"Malformed Block at Line: {Current.Line}"));
+                                if (content is "If")
+                                {
+                                    Instructions.Add(ParseStatement<IfBlock>(Current) ?? throw new Exception($"Malformed Block at Line: {Current.Line}"));
+                                }
+                                else if (content is "Elif")
+                                {
+                                    Instructions.Add(ParseStatement<Elif>(Current) ?? throw new Exception($"Malformed Block at Line: {Current.Line}"));
+                                }
+                                else if (content is "Else")
+                                {
+                                    Instructions.Add(ParseStatement<Else>(Current) ?? throw new Exception($"Malformed Block at Line: {Current.Line}"));
+                                }
+                                continue;
                             }
-                            else if (content is "Elif")
+                            else
                             {
-                                Instructions.Add(ParseStatement<Elif>(Current) ?? throw new Exception($"Malformed Block at Line: {Current.Line}"));
+                                if(content is "If" or "Elif" or "Else")
+                                {
+                                    CurrentBlock = content;
+                                    inBlock = true;
+                                    continue;
+                                }
                             }
-                            else if (content is "Else")
-                            {
-                                Instructions.Add(ParseStatement<Else>(Current) ?? throw new Exception($"Malformed Block at Line: {Current.Line}"));
-                            }
+
                         }
 
 
 
-                        if (isAssign || inParen)
+                        if (isAssign || inParen) 
                         {
+                            if (isAssign && Keywords.Contains(content)) // Assignment Type 
+                            {
+                                if(content is "Read" or "Run")
+                                {
+                                    if (inParen && CurrentContent.type is "Run" or "Read")
+                                    {
+                                        throw new Exception("KeyWords inside Assignment types");
+                                    }
+
+                                    CurrentContent.type = content;
+                                    continue;
+                                }
+                            }
+                            else if(!isAssign && Keywords.Contains(content)) // Read and Run instruction without assignment
+                            {
+                                if(content is "Read" or "Run")
+                                {
+                                    if (inParen && CurrentContent.type is "Run" or "Read")
+                                    {
+                                        throw new Exception("KeyWords inside Instruction types");
+                                    }
+                                    CurrentInstruction = content;
+                                    continue;
+                                }
+
+                            }
+                            // variable call
                             CurrentContent = (content, "identifier");
                             continue;
                         }
@@ -538,20 +250,27 @@ namespace Automa.Source.Core
                     }
                     else if(CurrentType is LexerType.Token_Equal)
                     {
-                        PrevTok = CurrentType;
+                        if (depth > 1)
+                        {
+                            continue;
+                        }
 
-                        if(PrevTok is LexerType.Token_Identifier)
+
+                        if (PrevTok is LexerType.Token_Identifier)
                         {
                             isAssign = true;
+                            PrevTok = CurrentType;
                             continue;
                         }
                         else if(PrevTok is LexerType.Token_Equal)
                         {
                             isAssign = false;
+                            PrevTok = CurrentType;
                             continue;
                         }else if(PrevTok is LexerType.Token_Not)
                         {
                             isAssign = false;
+                            PrevTok = CurrentType;
                             continue;
                         }
 
@@ -559,31 +278,198 @@ namespace Automa.Source.Core
                     }
                     else if(CurrentType is LexerType.Token_LParen) // (
                     {
-                        // to be implemented
+                        if (depth > 1)
+                        {
+                            continue;
+                        }
+
+                        PrevTok = CurrentType;
+                        if (!inParen)
+                        {
+                            inParen = true;
+                            continue;
+                        }
+                        else
+                        {
+                            if(CurrentContent.type is "Run" or "Read")
+                            {
+                                throw new Exception($"Cannot have one or more parenthesis in Assign types Run or Read at Line {Current.Line}");
+                            }
+
+                            pdepth++;
+                            continue;
+                        }
                     }
                     else if(CurrentType is LexerType.Token_RParen) // )
                     {
-                        // to be implemented
+                        if (depth > 1)
+                        {
+                            continue;
+                        }
+
+                        PrevTok = CurrentType;
+                        if (!inParen)
+                        {
+                            throw new Exception($"Missing Left parenthesis in Line {Current.Line}");
+                        }   
+
+                        if(pdepth > 0)
+                        {
+                            pdepth--;
+                            continue;
+                        }
+                        else
+                        {
+                            inParen = false;
+                            continue;
+                        }
+
+
                     }
                     else if(CurrentType is LexerType.TokenString or LexerType.TokenInt) // "abc" or 123
                     {
-                        // to be implemented
+                        if (depth > 1)
+                        {
+                            continue;
+                        }
+
+                        if (!isAssign && !inParen)
+                        {
+                            throw new Exception($"Cannot assign value to Literals at line {Current.Line}");
+                        }
+                        else if (inParen && PrevTok != LexerType.Token_Identifier)
+                        {
+                            throw new Exception($"Invalid Use of Literals at line {Current.Line}");
+                        }
+
+                        if((inParen && CurrentContent.type is "Run" or "Read")) // assuming the next is a R paren ')'
+                        {
+                            CurrentContent.value = Current.GetContent(); // store the arg of Run and Read
+                            continue;
+                        }
+
+                        if(CurrentType is LexerType.TokenInt) // int 
+                        {
+                            CurrentContent = (Current.GetContent(), "int");
+                            continue;
+                        }
+
+                        CurrentContent = (Current.GetContent(), "string"); // string
+                        continue;
                     }
                     else if(CurrentType is LexerType.Token_SemiColon) // ;
                     {
-                        // to be implemented
+                        if (depth > 1)
+                        {
+                            continue;
+                        }
+
+                        if (CurrentInstruction is "Write") // Instruction: Write  (STDOUT)
+                        {
+                            if(CurrentContent.type is "identifier")
+                            {
+                                Instructions.Add(new WriteInstruction(CurrentContent.value,true));
+                                continue;
+                            }
+
+                            Instructions.Add(new WriteInstruction(CurrentContent.value));
+
+                            // reset
+                            CurrentContent = ("", "");
+                            CurrentInstruction = "";
+                            isAssign = false;
+
+                            continue;
+                        }
+                        else if(CurrentInstruction is "Read")
+                        {
+                            Instructions.Add(new ReadAssign("null", CurrentContent.value));
+
+                            // reset
+                            CurrentContent = ("", "");
+                            CurrentInstruction = "";
+                            isAssign = false;
+
+                            continue;
+                        }
+                        else if(CurrentInstruction is "Run")
+                        {
+                            Instructions.Add(new RunAssignment(("null",CurrentContent.value)));
+
+                            // reset
+                            CurrentContent = ("", "");
+                            CurrentInstruction = "";
+                            isAssign = false;
+
+                            continue;
+                        }
+                        else
+                        {
+
+
+                            string varname = CurrentInstruction;
+
+                            if(CurrentContent.type is "Read")
+                            {
+                                Instructions.Add(new ReadAssign(varname, CurrentContent.value));
+
+                                // reset
+                                CurrentContent = ("", "");
+                                CurrentInstruction = "";
+                                isAssign = false;
+
+                                continue;
+                            }
+                            else if(CurrentContent.type is "Run")
+                            {
+                                Instructions.Add(new RunAssignment((varname,CurrentContent.value)));
+
+                                // reset
+                                CurrentContent = ("", "");
+                                CurrentInstruction = "";
+                                isAssign = false;
+
+                                continue;
+                            }
+
+                            VariableType _type = VariableType.String;
+
+                            if(CurrentContent.type is "int")
+                            {
+                                _type = VariableType.Int;
+                            }else if(CurrentContent.type is "identifier")
+                            {
+                                _type = VariableType.Identifier;
+                            }
+
+                            Instructions.Add(new VariableAssign(new(varname, CurrentContent.value,_type)));
+                            continue;
+
+                        }
+
                     }
                     else if(CurrentType is LexerType.Token_LBrace)
                     {
-                        // to be implemented
+                        if (inBlock) // depth always starts at 1;
+                        {
+                            depth++;
+                            continue;
+                        }
                     }
                     else if(CurrentType is LexerType.Token_RBrace)
                     {
-                        // to be implemented
+                        if(depth > 1)
+                        {
+                            depth--;
+                            continue;
+                        }
+
+                        break; // if depth reaches 1
                     }
                     else if(CurrentType is LexerType.Token_Not)
                     {
-                        // to be implemented
+                        PrevTok = CurrentType;
+                        continue;
                     }
                 }
 
@@ -612,7 +498,7 @@ namespace Automa.Source.Core
         }
 
 
-        private List<object> _Parse() // To be continued...
+        private List<object> _Parse()
         {
             try
             {
@@ -717,6 +603,22 @@ namespace Automa.Source.Core
 
                         if (isAssign || inParen) // if identifier is in paren or right hand of the assignment ( Right )
                         {
+                            if (Keywords.Contains(ident) && isAssign)
+                            {
+                                if(ident is "Read" or "Run")
+                                {
+                                    CC.type = ident;
+                                    continue;
+                                }
+                            }else if(!isAssign && Keywords.Contains(ident))
+                            {
+                                if (ident is "Read" or "Run")
+                                {
+                                    CI = ident;
+                                    continue;
+                                }
+                            }
+
                             CC = (ident, "Identifier"); // current Content
                         }
                         else // Left
@@ -820,131 +722,56 @@ namespace Automa.Source.Core
                         }
                         else if(CI is "Read" ) // STDIN
                         {
-                            if (!validParen)
+                            if(inBlock && depth is 1)
                             {
-                                throw new Exception($"Missing Left parenthesis on Line {Current.Line}");
+                                BlockInstructions.Add(new ReadAssign("null", CC.content));
+
+                                //reset all before proceeding to the next
+
+                                CI = string.Empty; // erase CI for the next...
+                                CC = ("", "");
+                                validParen = false;
+                                isAssign = false;
+                                continue;
                             }
 
-                            if (!isAssign)
+                            if(!inBlock && depth is 0)
                             {
+                                Instructions.Add(new ReadAssign("null", CC.content));
 
-                                if (inBlock && depth == 1)
-                                {
-                                    BlockInstructions.Add(new AssignInstruction(new ReadAssign("null", CC.content)));
+                                //reset all before proceeding to the next
 
-                                    //reset all before proceeding to the next
-
-                                    CI = string.Empty; // erase CI for the next...
-                                    CC = ("", "");
-                                    validParen = false;
-                                    isAssign = false;
-
-                                    continue;
-                                }
-
-                                if(!inBlock && depth is 0)
-                                {
-                                    Instructions.Add(new AssignInstruction(new ReadAssign("null", CC.content)));
-
-                                    //reset all before proceeding to the next
-
-                                    CI = string.Empty; // erase CI for the next...
-                                    CC = ("", "");
-                                    validParen = false;
-                                    isAssign = false;
-
-                                    continue;
-                                }
-
-
-                            }
-
-
-                            if (inBlock && depth == 1)
-                            {
-                                BlockInstructions.Add(new AssignInstruction(new ReadAssign(CI, CC.content)));
-                            }
-
-                            if(!inBlock && depth == 0)
-                            {
-                                Instructions.Add(new AssignInstruction(new ReadAssign(CI,CC.content)));
+                                CI = string.Empty; // erase CI for the next...
+                                CC = ("", "");
+                                validParen = false;
+                                isAssign = false;
                                 continue;
                             }
 
                         }
-                        else if(CI is "Run")
+                        else if(CI is "Run") // Run
                         {
-                            if (!validParen)
+                            if(inBlock && depth is 1)
                             {
-                                throw new Exception($"Missing Left parenthesis on Line {Current.Line}");
-                            }
-
-
-                            if (!isAssign)
-                            {
-
-                                if(CC.type == "identifier")
-                                {
-                                    throw new Exception($"Run Args must be in string! Error on Line: {Current.Line}");
-                                }
-
-                                if (inBlock && depth == 1)
-                                {
-                                    BlockInstructions.Add(new AssignInstruction(new RunAssignment(("null", CC.content))));
-
-                                    //reset all before proceeding to the next
-
-                                    CI = string.Empty; // erase CI for the next...
-                                    CC = ("", "");
-                                    validParen = false;
-                                    isAssign = false;
-
-                                    continue;
-                                }
-
-                                if(!inBlock && depth == 0)
-                                {
-                                    Instructions.Add(new AssignInstruction(new RunAssignment(("null",CC.content))));
-
-                                    //reset all before proceeding to the next
-
-                                    CI = string.Empty; // erase CI for the next...
-                                    CC = ("", "");
-                                    validParen = false;
-                                    isAssign = false;
-
-                                    continue;
-                                }
-
-
-                            }
-
-                            if (inBlock && depth == 1)
-                            {
-                                BlockInstructions.Add(new AssignInstruction(new RunAssignment((CI, CC.content))));
-
+                                BlockInstructions.Add(new RunAssignment(("null", CC.content)));
                                 //reset all before proceeding to the next
 
                                 CI = string.Empty; // erase CI for the next...
                                 CC = ("", "");
                                 validParen = false;
                                 isAssign = false;
-
                                 continue;
                             }
 
-                            if(!inBlock && depth == 0)
+                            if(!inBlock && depth is 0)
                             {
-                            Instructions.Add(new AssignInstruction(new RunAssignment((CI, CC.content))));
-
-
+                                Instructions.Add(new RunAssignment(("null",CC.content)));
                                 //reset all before proceeding to the next
 
                                 CI = string.Empty; // erase CI for the next...
                                 CC = ("", "");
                                 validParen = false;
                                 isAssign = false;
-
                                 continue;
                             }
 
@@ -953,40 +780,91 @@ namespace Automa.Source.Core
                         {
                             VariableType _type = VariableType.String;
 
-                            if(CC.type == "int")
+                            if(CC.type is "int")
                             {
-                                _type = VariableType.Int; // 123
-                            }
-                            else if (CC.type == "identifier")
+                                _type = VariableType.Int;
+                            }else if(CC.type is "identifier")
                             {
-                                _type = VariableType.Identifier; // No Qourte
+                                _type = VariableType.Identifier;
                             }
 
-                            if (inBlock && depth == 1)
-                            {
-                                BlockInstructions.Add(new AssignInstruction(new VariableAssign(new(CI, CC.content,_type))));
+                            string varname = CI;
 
+                            if(CC.type is "Read")
+                            {
+
+                                if(inBlock && depth is 1)
+                                {
+                                    BlockInstructions.Add(new ReadAssign(varname, CC.content));
+                                    //reset all before proceeding to the next
+
+                                    CI = string.Empty; // erase CI for the next...
+                                    CC = ("", "");
+                                    validParen = false;
+                                    isAssign = false;
+                                    continue;
+                                }
+
+                                if(!inBlock && depth is 0)
+                                {
+                                    Instructions.Add(new ReadAssign(varname, CC.content));
+                                    //reset all before proceeding to the next
+
+                                    CI = string.Empty; // erase CI for the next...
+                                    CC = ("", "");
+                                    validParen = false;
+                                    isAssign = false;
+                                    continue;
+                                }
+                            }
+                            else if(CC.type is "Run")
+                            {
+                                if (inBlock && depth is 1)
+                                {
+                                    BlockInstructions.Add(new RunAssignment((varname, CC.content)));
+                                    //reset all before proceeding to the next
+
+                                    CI = string.Empty; // erase CI for the next...
+                                    CC = ("", "");
+                                    validParen = false;
+                                    isAssign = false;
+                                    continue;
+                                }
+
+                                if (!inBlock && depth is 0)
+                                {
+                                    Instructions.Add(new RunAssignment((varname, CC.content)));
+                                    //reset all before proceeding to the next
+
+                                    CI = string.Empty; // erase CI for the next...
+                                    CC = ("", "");
+                                    validParen = false;
+                                    isAssign = false;
+                                    continue;
+                                }
+                            }
+
+                            if(inBlock && depth is 1)
+                            {
+                                BlockInstructions.Add(new VariableAssign(new(varname, CC.content, _type)));
                                 //reset all before proceeding to the next
 
                                 CI = string.Empty; // erase CI for the next...
                                 CC = ("", "");
                                 validParen = false;
                                 isAssign = false;
-
                                 continue;
                             }
 
-                            if(!inBlock && depth == 0)
+                            if(!inBlock && depth is 0)
                             {
-                                Instructions.Add(new AssignInstruction(new VariableAssign(new(CI, CC.content, _type))));
-
+                                Instructions.Add(new VariableAssign(new(varname, CC.content, _type)));
                                 //reset all before proceeding to the next
 
                                 CI = string.Empty; // erase CI for the next...
                                 CC = ("", "");
                                 validParen = false;
                                 isAssign = false;
-
                                 continue;
                             }
                         }
@@ -997,6 +875,13 @@ namespace Automa.Source.Core
                     else if(CT is LexerType.TokenString or LexerType.TokenInt) // Integer or String literals
                     {
                         prevTok = CT;
+
+                        if((isAssign || inParen) && CC.type is "Read" or "Run")
+                        {
+                            CC.content = Current.GetContent();
+                            continue;
+                        }
+
                         if (CT is LexerType.TokenInt)
                         {
                             CC = (Current.GetContent(), "int");
@@ -1008,23 +893,25 @@ namespace Automa.Source.Core
                     }
                     else if(CT is LexerType.Token_Equal) // =
                     {
-                        prevTok = CT;
 
                         if(prevTok is LexerType.Token_Identifier)
                         {
                             isAssign = true;
+                            prevTok = CT;
                             continue;
                         }
 
                         if (prevTok is LexerType.Token_Equal)
                         {
                             isAssign = false;
+                            prevTok = CT;
                             continue;
                         }
 
                         if(prevTok is LexerType.Token_Not)
                         {
                             isAssign = false;
+                            prevTok = CT;
                             continue;
                         }
 
@@ -1098,11 +985,11 @@ namespace Automa.Source.Core
         {
             try
             {
-                var Data = Parse(); // Currently in use for compat
 
-                var _Data = _Parse(); // to be used
 
-                Executor exec = new(Data.Instructions); // only pass instructions not the entire variables
+                var Data = _Parse(); // to be used
+
+                Executor exec = new(Data); // only pass instructions not the entire variables
                 
 
                 return exec.Start();

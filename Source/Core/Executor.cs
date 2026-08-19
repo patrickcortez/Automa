@@ -135,7 +135,7 @@ namespace Automa.Source.Core
 
                             if (isdebug)
                             {
-                                Console.WriteLine("[Debug] Executing IFBlock with {0} instructions", block.Variable.Count);
+                                Console.WriteLine("[Debug] Executing IFBlock with {0} instructions", block.Instructions.Count);
                             }
 
                             if (block.expression is EqualTo eq)
@@ -180,7 +180,7 @@ namespace Automa.Source.Core
 
                             if (isdebug)
                             {
-                                Console.WriteLine("[Debug] Executing EliFBlock with {0} instructions", elif.Variable.Count);
+                                Console.WriteLine("[Debug] Executing EliFBlock with {0} instructions", elif.Instructions.Count);
                             }
 
                             if (elif.expression is EqualTo EQ)
@@ -217,7 +217,7 @@ namespace Automa.Source.Core
 
                             if (isdebug)
                             {
-                                Console.WriteLine("[Debug] Executing ElseBlock with {0} instructions", els.Variable.Count);
+                                Console.WriteLine("[Debug] Executing ElseBlock with {0} instructions", els.Instructions.Count);
                             }
                             els.ExecuteBlock();
                             Variables = els.Variable.Intersect(Variables).ToList();

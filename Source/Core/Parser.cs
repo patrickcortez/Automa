@@ -129,7 +129,6 @@ namespace Automa.Source.Core
                         inParen = false,
                         validParen = false,
                         parseExpression = false,
-                        
                         isAssign = false;
                 int depth = 0, pdepth = 0; // brace depth and parenthesis depth
 
@@ -714,7 +713,6 @@ namespace Automa.Source.Core
                                     CI = string.Empty; // erase CI for the next...
                                     CC = ("", "");
                                     validParen = false;
-                                    isAssign = false;
                                     continue;
                                 }
 
@@ -725,8 +723,6 @@ namespace Automa.Source.Core
                                 CI = string.Empty; // erase CI for the next...
                                 CC = ("", "");
                                 validParen = false;
-                                isAssign = false;
-
                                 continue;
                             }
 
@@ -742,7 +738,6 @@ namespace Automa.Source.Core
                                 CI = string.Empty; // erase CI for the next...
                                 CC = ("", "");
                                 validParen = false;
-                                isAssign = false;
 
                                 continue;
                                 }
@@ -754,7 +749,6 @@ namespace Automa.Source.Core
                                 CI = string.Empty; // erase CI for the next...
                                 CC = ("", "");
                                 validParen = false;
-                                isAssign = false;
 
                                 continue;
                             }
@@ -975,6 +969,11 @@ namespace Automa.Source.Core
                         if (inBlock && depth > 1)
                         {
                             depth--;
+                            // Reset every depth greater than 1
+                            CC = ("", "");
+                            CI = "";
+                            isAssign = false;
+                            inParen = false;
                             continue;
                         }
 
@@ -993,11 +992,11 @@ namespace Automa.Source.Core
                             }
 
                             BlockInstructions.Clear();
-
+                            depth = 0;
+                            CB = "";
+                            inBlock = false;
                         }
-                        depth = 0;
-                        CB = "";
-                        inBlock = false;
+
                     }
                     else if(CT is LexerType.Token_Not) // !
                     {

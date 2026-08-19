@@ -8,7 +8,7 @@ using static Automa.Source.Utility.Utils;
 
 namespace Automa.Source.Core
 {
-    internal class Parser(LexerToken[] LexTok,string[]? Tokens = null)
+    internal class Parser(LexerToken[] LexTok,bool isdebug = false)
     {
         string[] Keywords = ["Write", "Read", "If","Elif","Else","Run"];
 
@@ -20,13 +20,25 @@ namespace Automa.Source.Core
         {
             try
             {
+                if(Tokens.Count < 4)
+                {
+                    throw new Exception($"Insufficient Tokens for Expression in Line: {Tokens[0].Line}");
+                }
                 Expression? expr = null;
                 string LogicOP = "", left = "", right = "";
                 LexerType PrevType = LexerType.Token_None;
-
+                if (isdebug)
+                {
+                    Console.WriteLine("\n[Debug] Current Expression (total tokens in expr: {0}):", Tokens.Count);
+                }
                 foreach (LexerToken Current in Tokens)
                 {
                     LexerType CT = Current.TokenType;
+
+                    if (isdebug)
+                    {
+                        Console.Write(", {0} ,", CT.ToString());
+                    }
 
                     if (CT is LexerType.Token_Identifier)
                     {
@@ -34,11 +46,11 @@ namespace Automa.Source.Core
 
                         if (LogicOP.Length is 0)
                         {
-                            right = Current.GetContent();
+                            left = Current.GetContent();
                         }
                         else
                         {
-                            left = Current.GetContent();
+                            right = Current.GetContent();
                         }
 
                         continue;
@@ -58,6 +70,9 @@ namespace Automa.Source.Core
                         {
                             LogicOP = "NEQ";
                         }
+
+                        PrevType = CT;
+                        continue;
                     }
                     else if (CT is LexerType.TokenString or LexerType.TokenInt)
                     {
@@ -65,11 +80,11 @@ namespace Automa.Source.Core
 
                         if (LogicOP.Length is 0)
                         {
-                            right = content;
+                            left = content;
                         }
                         else
                         {
-                            left = content;
+                            right = content;
                         }
 
                     }
@@ -124,26 +139,28 @@ namespace Automa.Source.Core
 
                 List<LexerToken> Toks = LexTok.Skip(StartingIndex).ToList();
 
+                if (isdebug)
+                {
+                    Console.WriteLine("[Debug] Statement Tokens (Statement Token total: {0}):",Toks.Count);
+                }
+
                 foreach (LexerToken Current in Toks)
                 {
                     LexerType CurrentType = Current.TokenType;
 
-                    // Expression Handling
-                    if (parseExpression && CurrentType is not LexerType.Token_RBrace)
+                    if (isdebug)
                     {
-                        if(depth > 0)
-                        {
-                            continue;
-                        }
+                        Console.WriteLine("{0}", CurrentType.ToString());
+                    }
+
+                    // Expression Handling
+                    if (parseExpression && CurrentType is not LexerType.Token_RParen && depth is 0)
+                    {
                         expression.Add(Current);
                         continue;
                     }
-                    else if(parseExpression && CurrentType is LexerType.Token_RBrace)
+                    else if(parseExpression && CurrentType is LexerType.Token_RParen && depth is 0)
                     {
-                        if (depth > 0)
-                        {
-                            continue;
-                        }
                         expr = ParseExpression(expression);
                         parseExpression = false;
                         continue;
@@ -151,12 +168,8 @@ namespace Automa.Source.Core
 
                     
                     // Determine if we're entering an Expression
-                    if((inBlock && PrevTok is LexerType.Token_Identifier ) && CurrentType is LexerType.Token_LParen && !parseExpression)
+                    if((inBlock && PrevTok is LexerType.Token_Identifier ) && CurrentType is LexerType.Token_LParen && !parseExpression && depth is 0)
                     {
-                        if (depth > 0)
-                        {
-                            continue;
-                        }
                         parseExpression = true;
                         continue;
                     }
@@ -337,10 +350,7 @@ namespace Automa.Source.Core
                         {
                             throw new Exception($"Cannot assign value to Literals at line {Current.Line}");
                         }
-                        else if (inParen && PrevTok != LexerType.Token_Identifier)
-                        {
-                            throw new Exception($"Invalid Use of Literals at line {Current.Line}");
-                        }
+
 
                         if((inParen && CurrentContent.type is "Run" or "Read")) // assuming the next is a R paren ')'
                         {
@@ -522,15 +532,24 @@ namespace Automa.Source.Core
 
                 List<LexerToken> expression = new();
 
+                if (isdebug)
+                {
+                    Console.WriteLine("[Debug] TopLevel Statement (Total Tokens: {0}):",_Tokens.Length);
+                }
+
                 foreach (LexerToken Current in _Tokens)
                 {
                     LexerType CT = Current.TokenType;
 
+                    if (isdebug)
+                    {
+                        Console.WriteLine("[Debug] Current Token: {0}",CT.ToString());
+                    }
+
                     // Expression Handling
 
-                    if (CT is LexerType.Token_RParen && parseExpression)
+                    if (CT is LexerType.Token_RParen && parseExpression && depth is 0)
                     {
-
 
                         expr = ParseExpression(expression); // Determine Expression
                         
@@ -540,14 +559,14 @@ namespace Automa.Source.Core
                     }
                     
 
-                    if (parseExpression)
+                    if (parseExpression && CT is not LexerType.Token_RParen && depth is 0)
                     {
                         expression.Add(Current);
                         continue;
                     }
 
 
-                    if((inBlock && prevTok is LexerType.Token_Identifier) && CT is LexerType.Token_LBrace && !parseExpression) // Expression Parsing
+                    if((inBlock && prevTok is LexerType.Token_Identifier) && CT is LexerType.Token_LParen && !parseExpression && depth is 0) // Expression Parsing
                     {
                         parseExpression = true;
                         continue;
@@ -568,38 +587,39 @@ namespace Automa.Source.Core
                         string ident = Current.GetContent();
                         
 
-                        if (Keywords.Contains(ident))
-                        {
                             
-                            if(CI is "If" or "Elif" or "Else" && depth == 1)
+                            if(ident is "If" or "Elif" or "Else")
                             {
-                                CB = CI;
-                                if (inBlock)
+
+                                if (inBlock && depth == 1)
                                 {
-                                    if(CB is "If")
+                                    if(ident is "If")
                                     {
                                         BlockInstructions.Add(ParseStatement<IfBlock>(Current) ?? throw new Exception($"Parsing Error: Nested if is malformed at line: {Current.Line}"));
                                     }
-                                    else if(CB is "Elif")
+                                    else if(ident is "Elif")
                                     {
                                         BlockInstructions.Add(ParseStatement<Elif>(Current) ?? throw new Exception($"Parsing Error: Nested if is malformed at line: {Current.Line}"));
                                     }
-                                    else if(CB is "Else")
+                                    else if(ident is "Else")
                                     {
                                         BlockInstructions.Add(ParseStatement<Else>(Current) ?? throw new Exception($"Parsing Error: Nested if is malformed at line: {Current.Line}"));
                                     }
                                     continue;
                                 }
-
-                                if (!inBlock)
+                                else
                                 {
+                                    CI = ident;
+                                    CB = CI;
                                     inBlock = true;
+                                    continue;
                                 }
-
+    
+                                
                             }
 
-                            continue;
-                        }
+
+                        
 
                         if (isAssign || inParen) // if identifier is in paren or right hand of the assignment ( Right )
                         {
@@ -649,9 +669,9 @@ namespace Automa.Source.Core
                     else if (CT is LexerType.Token_RParen) // )
                     {
                         prevTok = CT;
-                        if (depth > 0)
+                        if (pdepth > 0)
                         {
-                            depth--;
+                            pdepth--;
                             continue;
                         }
 
@@ -685,6 +705,13 @@ namespace Automa.Source.Core
                                 if(CC.type == "identifier")
                                 {
                                     BlockInstructions.Add(new WriteInstruction(CC.content,true));
+                                    //reset all before proceeding to the next
+
+                                    CI = string.Empty; // erase CI for the next...
+                                    CC = ("", "");
+                                    validParen = false;
+                                    isAssign = false;
+                                    continue;
                                 }
 
                                 BlockInstructions.Add(new WriteInstruction(CC.content));
@@ -705,6 +732,15 @@ namespace Automa.Source.Core
                                 if (CC.type == "identifier")
                                 {
                                     Instructions.Add(new WriteInstruction(CC.content, true));
+                                    
+                                //reset all before proceeding to the next
+
+                                CI = string.Empty; // erase CI for the next...
+                                CC = ("", "");
+                                validParen = false;
+                                isAssign = false;
+
+                                continue;
                                 }
 
                                 Instructions.Add(new WriteInstruction(CC.content));
@@ -942,26 +978,21 @@ namespace Automa.Source.Core
                         {
                             if(CB is "If")
                             {
-                                Instructions.Add(new IfBlock(expr, BlockInstructions, new()));
-                                continue;
+                                Instructions.Add(new IfBlock(expr,new(BlockInstructions), new()));
                             }else if(CB is "Elif")
                             {
-                                Instructions.Add(new Elif(expr, BlockInstructions, new()));
-                                continue;
+                                Instructions.Add(new Elif(expr, new(BlockInstructions), new()));
                             }
                             else if(CB is "Else")
                             {
-                                Instructions.Add(new Else(BlockInstructions, new()));
-                                continue;
+                                Instructions.Add(new Else(new(BlockInstructions), new()));
                             }
+
+                            BlockInstructions.Clear();
+
                         }
-
-                        if(CB.Length > 0)
-                        {
-                            CB = "";
-                        }
-
-
+                        depth = 0;
+                        CB = "";
                         inBlock = false;
                     }
                     else if(CT is LexerType.Token_Not) // !
@@ -985,14 +1016,12 @@ namespace Automa.Source.Core
         {
             try
             {
-
-
                 var Data = _Parse(); // to be used
 
                 Executor exec = new(Data); // only pass instructions not the entire variables
                 
 
-                return exec.Start();
+                return exec.Start(isdebug);
             }
             catch(Exception ex)
             {

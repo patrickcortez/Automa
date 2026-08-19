@@ -145,7 +145,7 @@ namespace Automa.Source
         public List<Variable> Variable { get; set; } = Variables;
         public int ExecuteBlock()
         {
-            Executor executor = new(Instructions, Variables);
+            Executor executor = new(Instructions, this.Variable);
             return executor.Start();
         }
     }
@@ -181,7 +181,7 @@ namespace Automa.Source
 
         public bool Evaluate()
         {
-            // Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
+
 
             if(left is LiteralExpression LitLeft)
             {
@@ -190,7 +190,9 @@ namespace Automa.Source
                     Variable? FindLeft = Utils.FindVariable(LitLeft.value, Variables);
                     Variable? FindRight = Utils.FindVariable(LitRight.value, Variables);
 
-                    if(FindLeft != null && FindRight != null)
+                    //Console.WriteLine("[Debug] Left value: {0} , Right value: {1}", FindLeft.value ?? LitLeft.value, FindRight.value ?? LitRight.value);
+
+                    if (FindLeft != null && FindRight != null)
                     {
                         return FindLeft.value == FindRight.value;
                     }else if(FindLeft != null)

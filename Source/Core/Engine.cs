@@ -123,7 +123,6 @@ namespace Automa.Source.Core
                                     {
                                         Tokens.Add(new(LexerType.TokenInt, LineNo, Val));
                                         Value.Clear();
-                                        continue;
                                     }
                                     else // string
                                     {
@@ -133,10 +132,6 @@ namespace Automa.Source.Core
 
 
                                 }
-
-
-
-
 
                                 Tokens.Add(new(LexerType.Token_SemiColon, LineNo));
                                 continue;
@@ -148,6 +143,21 @@ namespace Automa.Source.Core
                             }
                             else if (c is ')')
                             {
+                                if(Value.Length > 0)
+                                {
+                                    string val = Value.ToString();
+
+                                    if(int.TryParse(val,out int num))
+                                    {
+                                        Tokens.Add(new(LexerType.TokenInt, LineNo,val));
+                                    }
+                                    else
+                                    {
+                                        Tokens.Add(new(LexerType.TokenString, LineNo, val));
+                                    }
+                                    Value.Clear();
+                                }
+
                                 Tokens.Add(new(LexerType.Token_RParen, LineNo));
                                 continue;
                             }
@@ -195,6 +205,21 @@ namespace Automa.Source.Core
                         {
                             Value.Append(c);
                         }
+
+
+                    }
+
+                    if (Tokens.Count > 0)
+                    {
+                        var lasttoken = Tokens[Tokens.Count - 1];
+
+                        if (lasttoken.Line == LineNo)
+                        {
+                            if (lasttoken.TokenType != LexerType.Token_SemiColon && lasttoken.TokenType != LexerType.Token_LBrace && lasttoken.TokenType != LexerType.Token_RBrace)
+                            {
+                                throw new Exception($"Missing ';' in line: {LineNo}");
+                            }
+                        }
                     }
 
                     LineNo++;
@@ -208,31 +233,6 @@ namespace Automa.Source.Core
             }
         }
 
-        private string[] Tokenize() // simple tokenizer
-        {
-            List<string> Tokens = new();
-
-             using StreamReader Reader = new(path);
-
-            string line = "";
-            while ((line = Reader.ReadLine()) != null)
-            {
-
-                if (string.IsNullOrWhiteSpace(line))
-                {
-                    continue;
-                }
-
-                if (line.StartsWith('#')) // Comments '#' 
-                {
-                    continue;
-                }
-
-                Tokens.Add(line);
-            }
-
-            return Tokens.ToArray();
-        }
 
         public int Start()
         {
@@ -250,7 +250,14 @@ namespace Automa.Source.Core
                     return 1;
                 }
 
-                Parser parse = new(_Tokenize() ?? throw new Exception("Lexer Error: Empty Tokens!"),Tokenize()); // TODO: Update Parser to recieve LexerTokens.
+                LexerToken[] toks = _Tokenize() ?? [];
+                
+                if(isdebug && toks.Length > 0)
+                {
+                    Console.WriteLine("[Debug] Token Count: {0}", toks.Count());
+                }
+
+                Parser parse = new(toks ?? throw new Exception("Lexer Error: Empty Tokens!"),isdebug);
                
 
                 return  parse.Start();

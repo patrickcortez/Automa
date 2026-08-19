@@ -13,6 +13,8 @@ namespace Automa.Source.Core
             { "help",  (string[] args) => { // Help of user convenience and a cli guide
 
                 Print("Automa SubCommands:");
+                Print("Flags:");
+                Print("[-d : enables debug]");
                 Print("version          - Displays current version of Automa");
                 Print("run <.auto>      - Runs a Automa script");
                 Print("help             - Displays this message");
@@ -21,11 +23,15 @@ namespace Automa.Source.Core
                 }
             },
             {
-                "run", (string[] args) => { Engine engine = new(args[0]); return engine.Start(); } // to be implemented, /(-_-)\
+                "run", (string[] args) => { // Run script;
+                    string flag = (args.Length > 1)? args[1] : ""; 
+                    Engine engine = new(args[0],(flag=="-d")? true : false); 
+                    return engine.Start(); 
+                }
             },
             {
 
-                "version", (string[] args) => { Print("Automa 0.0.1"); return 0;  } // Current Version of Automa
+                "version", (string[] args) => { Print("Automa 0.1.0"); return 0;  } // Current Version of Automa
             }
 
         };

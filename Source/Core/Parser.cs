@@ -453,6 +453,10 @@ namespace Automa.Source.Core
                             }
 
                             Instructions.Add(new VariableAssign(new(varname, CurrentContent.value,_type)));
+                            // reset
+                            CurrentContent = ("", "");
+                            CurrentInstruction = "";
+                            isAssign = false;
                             continue;
 
                         }

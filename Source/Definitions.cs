@@ -16,7 +16,9 @@ namespace Automa.Source
     internal enum VariableType
     {
         String,
-        Int
+        Int,
+
+        Identifier
     }
 
     internal enum LexerType // Lexer Types
@@ -91,7 +93,7 @@ namespace Automa.Source
 
     internal record VariableAssign(Variable variable) : AssignType;
     // Instructions
-    internal record WriteInstruction(string Content);
+    internal record WriteInstruction(string Content,bool isIdent = false);
 
     internal record ReadAssign(string target,string Prompt) : AssignType;
 

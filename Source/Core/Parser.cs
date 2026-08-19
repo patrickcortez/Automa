@@ -384,85 +384,231 @@ namespace Automa.Source.Core
             return (Instructions,null);
         }
 
+        // Expression handling: logical or Arithmetic. Currently its Just Logical (for now)
         private Expression? ParseExpression(List<LexerToken> Tokens)
         {
-            Expression? expr = null;
-            string LogicOP = "", left = "", right = "";
-            LexerType PrevType = LexerType.Token_None;
-
-            foreach (LexerToken Current in Tokens)
+            try
             {
-                LexerType CT = Current.TokenType;
+                Expression? expr = null;
+                string LogicOP = "", left = "", right = "";
+                LexerType PrevType = LexerType.Token_None;
 
-                if (CT is LexerType.Token_Identifier)
+                foreach (LexerToken Current in Tokens)
                 {
-                    PrevType = CT;
-                    
-                    if(LogicOP.Length is 0)
+                    LexerType CT = Current.TokenType;
+
+                    if (CT is LexerType.Token_Identifier)
                     {
-                        right = Current.GetContent();
+                        PrevType = CT;
+
+                        if (LogicOP.Length is 0)
+                        {
+                            right = Current.GetContent();
+                        }
+                        else
+                        {
+                            left = Current.GetContent();
+                        }
+
+                        continue;
+                    }
+                    else if (CT is LexerType.Token_Not)
+                    {
+                        PrevType = CT;
+                        continue;
+                    }
+                    else if (CT is LexerType.Token_Equal)
+                    {
+                        if (PrevType is LexerType.Token_Equal)
+                        {
+                            LogicOP = "EQ";
+                        }
+                        else if (PrevType is LexerType.Token_Not)
+                        {
+                            LogicOP = "NEQ";
+                        }
+                    }
+                    else if (CT is LexerType.TokenString or LexerType.TokenInt)
+                    {
+                        string content = Current.GetContent();
+
+                        if (LogicOP.Length is 0)
+                        {
+                            right = content;
+                        }
+                        else
+                        {
+                            left = content;
+                        }
+
                     }
                     else
                     {
-                        left = Current.GetContent();
+                        throw new Exception($"Invalid Token in Expression: {CT}, in Line: {Current.Line}");
                     }
 
-                    continue;
-                }
-                else if (CT is LexerType.Token_Not)
-                {
-                    PrevType = CT;
-                    continue;
-                }
-                else if (CT is LexerType.Token_Equal)
-                {
-                    if (PrevType is LexerType.Token_Equal)
-                    {
-                        LogicOP = "EQ";
-                    }
-                    else if (PrevType is LexerType.Token_Not)
-                    {
-                        LogicOP = "NEQ";
-                    }
-                }else if(CT is LexerType.TokenString or LexerType.TokenInt)
-                {
-                    string content = Current.GetContent();
-
-                    if(LogicOP.Length is 0)
-                    {
-                        right = content;
-                    }
-                    else
-                    {
-                        left = content;
-                    }
 
                 }
-                else
+
+                if (LogicOP == "EQ")
                 {
-                    throw new Exception($"Invalid Token in Expression: {CT}, in Line: {Current.Line}");
+                    expr = new EqualTo(new LiteralExpression(left), new LiteralExpression(right));
+                }
+                else if (LogicOP == "NEQ")
+                {
+                    expr = new NotEqualTo(new LiteralExpression(left), new LiteralExpression(right));
                 }
 
-                
-            }
-
-            if(LogicOP == "EQ")
+                return expr;
+            }catch(Exception ex)
             {
-                expr = new EqualTo(new LiteralExpression(left), new LiteralExpression(right));
+                Console.Error.WriteLine("Parser Expression Error: {0}", ex);
+                return null;
             }
-            else if(LogicOP == "NEQ")
-            {
-                expr = new NotEqualTo(new LiteralExpression(left), new LiteralExpression(right));
-            }
-
-            return expr;
         }
 
-        private T? ParseStatement<T>(LexerToken? Starting = null, LexerType? Ending = null)
+        private T? ParseStatement<T>(LexerToken Starting, LexerType Ending = LexerType.Token_RBrace)
         {
-            T mobile = (T)(object)null;
-            // To be implemented
-            return mobile;
+            try
+            {
+
+
+                Type type = typeof(T);
+                List<object> Instructions = new();
+                int StartingIndex = LexTok.IndexOf(Starting);
+                Expression? expr = null;
+                LexerType? PrevTok = null;
+                bool inParen = false,
+                        validParen = false,
+                        parseExpression = false,
+                        isAssign = false;
+                int depth = 0, pdepth = 0; // brace depth and parenthesis depth
+
+                string CurrentInstruction = "";
+                (string value, string type) CurrentContent;
+
+                List<LexerToken> Toks = LexTok.Skip(StartingIndex).ToList();
+
+                foreach (LexerToken Current in Toks)
+                {
+                    LexerType CurrentType = Current.TokenType;
+
+
+
+                    if (CurrentType is LexerType.Token_Identifier) // Instructions or variable decl
+                    {
+                        PrevTok = CurrentType;
+                        string content = Current.GetContent();
+
+                        if(inParen && isAssign)
+                        {
+                            throw new Exception($"Cannot assign inside parenthesis, at line: {Current.Line}");
+                        }
+
+                        if (Keywords.Contains(content))
+                        {
+                            if (content is "If")
+                            {
+                                Instructions.Add(ParseStatement<IfBlock>(Current) ?? throw new Exception($"Malformed Block at Line: {Current.Line}"));
+                            }
+                            else if (content is "Elif")
+                            {
+                                Instructions.Add(ParseStatement<Elif>(Current) ?? throw new Exception($"Malformed Block at Line: {Current.Line}"));
+                            }
+                            else if (content is "Else")
+                            {
+                                Instructions.Add(ParseStatement<Else>(Current) ?? throw new Exception($"Malformed Block at Line: {Current.Line}"));
+                            }
+                        }
+
+
+
+                        if (isAssign || inParen)
+                        {
+                            CurrentContent = (content, "identifier");
+                            continue;
+                        }
+                        else
+                        {
+                            CurrentInstruction = content;
+                            continue;
+                        }
+
+
+                    }
+                    else if(CurrentType is LexerType.Token_Equal)
+                    {
+                        PrevTok = CurrentType;
+
+                        if(PrevTok is LexerType.Token_Identifier)
+                        {
+                            isAssign = true;
+                            continue;
+                        }
+                        else if(PrevTok is LexerType.Token_Equal)
+                        {
+                            isAssign = false;
+                            continue;
+                        }else if(PrevTok is LexerType.Token_Not)
+                        {
+                            isAssign = false;
+                            continue;
+                        }
+
+                        throw new Exception($"Invalid assignment usage at line {Current.Line}");
+                    }
+                    else if(CurrentType is LexerType.Token_LParen) // (
+                    {
+                        // to be implemented
+                    }
+                    else if(CurrentType is LexerType.Token_RParen) // )
+                    {
+                        // to be implemented
+                    }
+                    else if(CurrentType is LexerType.TokenString or LexerType.TokenInt) // "abc" or 123
+                    {
+                        // to be implemented
+                    }
+                    else if(CurrentType is LexerType.Token_SemiColon) // ;
+                    {
+                        // to be implemented
+                    }
+                    else if(CurrentType is LexerType.Token_LBrace)
+                    {
+                        // to be implemented
+                    }
+                    else if(CurrentType is LexerType.Token_RBrace)
+                    {
+                        // to be implemented
+                    }
+                    else if(CurrentType is LexerType.Token_Not)
+                    {
+                        // to be implemented
+                    }
+                }
+
+                if (type == typeof(IfBlock))
+                {
+                    IfBlock block = new(expr, Instructions, new());
+                    return (T)(object)block;
+                }
+                else if (type == typeof(Elif))
+                {
+                    Elif block = new(expr, Instructions, new());
+                    return (T)(object)block;
+                }
+                else if (type == typeof(Else))
+                {
+                    Else block = new(Instructions, new());
+                    return (T)(object)block;
+                }
+
+                return (T)(object)null; // this is basically unrecheable but we have to return something -_-.
+            }catch(Exception ex)
+            {
+                Console.Error.WriteLine("Parser Statement Error: {0}",ex);
+                return (T)(object)null;
+            }
         }
 
 
@@ -481,28 +627,18 @@ namespace Automa.Source.Core
                 int depth = 0, pdepth = 0; // if-block depth and parenthesis depth
                 string CI = "None"; // Current Instruction,
                 LexerType prevTok = LexerType.Token_None;
-                string LOP = "", CB = ""; // Logical operator and Current Block
+                string  CB = ""; // Logical operator and Current Block
 
                 LexerToken[] _Tokens = LexTok;
                 Expression? expr = null;
 
-                int Sindex = 0;
-                if(Starting is not null) // Recursion
-                {
-                    Sindex = Array.IndexOf(LexTok,Starting);
-                    _Tokens = LexTok.Skip(Sindex).ToArray();
-                }
+
 
                 List<LexerToken> expression = new();
 
                 foreach (LexerToken Current in _Tokens)
                 {
                     LexerType CT = Current.TokenType;
-
-                    if(CT == Ending)
-                    {
-                        break;
-                    }
 
                     // Expression Handling
 
@@ -532,49 +668,64 @@ namespace Automa.Source.Core
                     }
 
                     // Check Tokens
+
+                    // Identifier handling
                     if (CT is LexerType.Token_Identifier)
                     {
                         prevTok = CT;
+
+                        if (isAssign && inParen) 
+                        {
+                            throw new Exception($"Cannot Assign inside parenthesis! Error on Line: {Current.Line}");
+                        }
+
                         string ident = Current.GetContent();
+                        
 
                         if (Keywords.Contains(ident))
                         {
-                            CI = ident;
                             
-
                             if(CI is "If" or "Elif" or "Else" && depth == 1)
                             {
+                                CB = CI;
                                 if (inBlock)
                                 {
                                     if(CB is "If")
                                     {
-                                        // Make ParseStateMent
+                                        BlockInstructions.Add(ParseStatement<IfBlock>(Current) ?? throw new Exception($"Parsing Error: Nested if is malformed at line: {Current.Line}"));
                                     }
+                                    else if(CB is "Elif")
+                                    {
+                                        BlockInstructions.Add(ParseStatement<Elif>(Current) ?? throw new Exception($"Parsing Error: Nested if is malformed at line: {Current.Line}"));
+                                    }
+                                    else if(CB is "Else")
+                                    {
+                                        BlockInstructions.Add(ParseStatement<Else>(Current) ?? throw new Exception($"Parsing Error: Nested if is malformed at line: {Current.Line}"));
+                                    }
+                                    continue;
                                 }
 
-                                CB = CI;
-                                inBlock = true;
+                                if (!inBlock)
+                                {
+                                    inBlock = true;
+                                }
+
                             }
 
                             continue;
                         }
-                        else
+
+                        if (isAssign || inParen) // if identifier is in paren or right hand of the assignment ( Right )
                         {
-                            if(isAssign && inParen)
-                            {
-                                throw new Exception($"Cannot Assign inside parenthesis! Error on Line: {Current.Line}");
-                            }
-
-                            if(isAssign || inParen)
-                            {
-                                CC = (ident, "Identifier");
-                                continue;
-                            }
-
-                            CI = ident;
+                            CC = (ident, "Identifier"); // current Content
+                        }
+                        else // Left
+                        {
+                            CI = ident; // Current Instruction
                             continue;
                         }
-                        
+
+
                     }
                     else if (CT is LexerType.Token_LParen) // (
                     {
@@ -611,7 +762,7 @@ namespace Automa.Source.Core
                         inParen = false;
                         continue;
                     }
-                    else if (CT is LexerType.Token_SemiColon)
+                    else if (CT is LexerType.Token_SemiColon) // ;
                     {
                         prevTok = CT;
                         if (inParen)
@@ -628,6 +779,12 @@ namespace Automa.Source.Core
 
                             if (inBlock && depth == 1)
                             {
+
+                                if(CC.type == "identifier")
+                                {
+                                    BlockInstructions.Add(new WriteInstruction(CC.content,true));
+                                }
+
                                 BlockInstructions.Add(new WriteInstruction(CC.content));
 
                                 //reset all before proceeding to the next
@@ -642,6 +799,12 @@ namespace Automa.Source.Core
 
                             if(!inBlock && depth == 0)
                             {
+
+                                if (CC.type == "identifier")
+                                {
+                                    Instructions.Add(new WriteInstruction(CC.content, true));
+                                }
+
                                 Instructions.Add(new WriteInstruction(CC.content));
 
                                 //reset all before proceeding to the next
@@ -655,7 +818,7 @@ namespace Automa.Source.Core
                             }
 
                         }
-                        else if(CI is "Read" )
+                        else if(CI is "Read" ) // STDIN
                         {
                             if (!validParen)
                             {
@@ -704,8 +867,8 @@ namespace Automa.Source.Core
 
                             if(!inBlock && depth == 0)
                             {
-                            Instructions.Add(new AssignInstruction(new ReadAssign(CI,CC.content)));
-                            continue;
+                                Instructions.Add(new AssignInstruction(new ReadAssign(CI,CC.content)));
+                                continue;
                             }
 
                         }
@@ -792,7 +955,11 @@ namespace Automa.Source.Core
 
                             if(CC.type == "int")
                             {
-                                _type = VariableType.Int;
+                                _type = VariableType.Int; // 123
+                            }
+                            else if (CC.type == "identifier")
+                            {
+                                _type = VariableType.Identifier; // No Qourte
                             }
 
                             if (inBlock && depth == 1)
@@ -842,23 +1009,28 @@ namespace Automa.Source.Core
                     else if(CT is LexerType.Token_Equal) // =
                     {
                         prevTok = CT;
-                        if (isAssign)
-                        {
-                            LOP = "EQ";
 
+                        if(prevTok is LexerType.Token_Identifier)
+                        {
+                            isAssign = true;
+                            continue;
+                        }
+
+                        if (prevTok is LexerType.Token_Equal)
+                        {
                             isAssign = false;
                             continue;
                         }
 
-                        if(prevTok == LexerType.Token_Not)
+                        if(prevTok is LexerType.Token_Not)
                         {
-                            LOP = "NEQ";
+                            isAssign = false;
                             continue;
                         }
 
-                        isAssign = true;
-                        continue;
-                    }else if(CT is LexerType.Token_LBrace) // {
+                        throw new Exception($"Invalid Assignment Usage at line: {Current.Line}");
+                    }
+                    else if(CT is LexerType.Token_LBrace) // {
                     {
                         prevTok = LexerType.Token_LBrace;
                         if (inBlock)
@@ -869,7 +1041,8 @@ namespace Automa.Source.Core
 
                         
                         continue;
-                    }else if(CT is LexerType.Token_RBrace) // }
+                    }
+                    else if(CT is LexerType.Token_RBrace) // }
                     {
                         prevTok = LexerType.Token_RBrace;
                         if (inBlock && depth > 1)
@@ -904,6 +1077,12 @@ namespace Automa.Source.Core
 
                         inBlock = false;
                     }
+                    else if(CT is LexerType.Token_Not) // !
+                    {
+                        prevTok = CT;
+                        continue;
+                    }
+                   
                     prevTok = CT;
                 }
 
@@ -919,9 +1098,9 @@ namespace Automa.Source.Core
         {
             try
             {
-                var Data = Parse();
+                var Data = Parse(); // Currently in use for compat
 
-                var _Data = _Parse();
+                var _Data = _Parse(); // to be used
 
                 Executor exec = new(Data.Instructions); // only pass instructions not the entire variables
                 

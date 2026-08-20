@@ -2,6 +2,7 @@
 using Automa.Source.Utility;
 using System.Data;
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 
 namespace Automa.Source
@@ -89,15 +90,19 @@ namespace Automa.Source
 
     // Assigns
 
+    internal abstract record Instruction
+    {
+        public Instruction? Next { get; set; }
+    }
     internal abstract record AssignType;
 
     internal record VariableAssign(Variable variable) : AssignType;
     // Instructions
-    internal record WriteInstruction(string Content,bool isIdent = false);
+    internal record WriteInstruction(string Content,bool isIdent = false) : Instruction;
 
     internal record ReadAssign(string target,string Prompt) : AssignType;
 
-    internal record AssignInstruction(AssignType type); 
+    internal record AssignInstruction(AssignType type) : Instruction; 
 
     internal record Variable(string _name, string _value,VariableType _type = VariableType.String)
     {
@@ -107,45 +112,46 @@ namespace Automa.Source
         public VariableType type = _type;
     }
 
-    internal record IfBlock(Expression expression, List<object> Instructions, List<Variable> Variables) // if(condition)
+    internal abstract record Block : Instruction
     {
-        public List<object> Instructions { get; set; } = Instructions;
+       public Instruction? Body { get; set; }
+    }
+
+    internal record IfBlock(Expression expression, List<Variable> Variables) : Block // if(condition)
+    {
 
         public List<Variable> Variable { get; set; } = Variables;
 
+       
+
         public int ExecuteBlock()
         {
-           // Console.WriteLine("Amount of VAriable in IF: {0}", Variables.Count);
-            //Console.WriteLine("Debug: IF Instructions: {0}", this.Instructions.Count);
-            Executor executor = new(this.Instructions, this.Variable);
+            Executor executor = new(Body, this.Variable); // replace new with Dody later...
 
             return  executor.Start();
         }
     }
 
-    internal record Elif(Expression expression, List<object> Instructions, List<Variable> Variables) // elif(<condition>)
+    internal record Elif(Expression expression, List<Variable> Variables) : Block // elif(<condition>)
     {
-        public List<object> Instructions { get; set; } = Instructions;
 
         public List<Variable> Variable { get; set; } = Variables;
 
         public int ExecuteBlock()
         {
-            //Console.WriteLine("Debug: IF Instructions: {0}", this.Instructions.Count);
-            Executor executor = new(this.Instructions, this.Variable);
+            Executor executor = new(Body, this.Variable); // replace new with Body Later...
 
             return  executor.Start();
         }
     }
 
-    internal record Else(List<object> Instructions, List<Variable> Variables)
+    internal record Else( List<Variable> Variables) : Block
     {
-        public List<object> Instructions { get; set; } = Instructions;
 
         public List<Variable> Variable { get; set; } = Variables;
         public int ExecuteBlock()
         {
-            Executor executor = new(Instructions, this.Variable);
+            Executor executor = new(Body, this.Variable);
             return executor.Start();
         }
     }

@@ -2,7 +2,7 @@
 
 namespace Automa.Source.Core
 {
-    internal class Executor(List<object> Instructions, List<Variable>? Variables = null)
+    internal class Executor(Instruction Current, List<Variable>? Variables = null)
     {
         public int Start(bool isdebug = false)
         {
@@ -15,10 +15,10 @@ namespace Automa.Source.Core
 
                 bool prevSucc = false;
                 
-                foreach (var instruction in Instructions)
+                while(Current != null)
                 {
                    // Cache.Variables = Variables;
-                    switch (instruction)
+                    switch (Current)
                     {
                         case WriteInstruction write:
 
@@ -29,14 +29,14 @@ namespace Automa.Source.Core
 
                             Console.WriteLine(ExpandVariables(write.Content,Variables));
                             break;
-                        case AssignType assignment:
+                        case AssignInstruction assignment:
 
                             if (isdebug)
                             {
                                 Console.Write("[Debug] Executing Assignment with");
                             }
 
-                            if (assignment is VariableAssign var)
+                            if (assignment.type is VariableAssign var)
                             {
                                 if (isdebug)
                                 {
@@ -54,11 +54,11 @@ namespace Automa.Source.Core
                                     if(FindValue is not null)
                                     {
                                         Variables[vIndex].value = FindValue.value;
-                                        continue;
+                                        break;
                                     }
 
                                     Variables[vIndex].value = newVariable.value;
-                                    continue;
+                                    break;
                                 }
                                 
                                 if(FindValue is not null)
@@ -69,8 +69,8 @@ namespace Automa.Source.Core
                                 }
 
                                 Variables.Add(newVariable);
-                                continue;
-                            }else if(assignment is ReadAssign read)
+                                break;
+                            }else if(assignment.type is ReadAssign read)
                             {
                                 if (isdebug)
                                 {
@@ -80,7 +80,7 @@ namespace Automa.Source.Core
                                 if(read.target is "null")
                                 {
                                     Input(read.Prompt);
-                                    continue;
+                                    break;
                                 }
 
                                 Variable? findVariable = FindVariable(read.target, Variables);
@@ -90,14 +90,14 @@ namespace Automa.Source.Core
                                     int vIndex = Variables.IndexOf(findVariable);
 
                                     Variables[vIndex].value = Input(read.Prompt) ?? "";
-                                    continue;
+                                    break;
                                 }
 
                                 Variable newVariable = new(read.target, Input(read.Prompt) ?? "");
                                 Variables.Add(newVariable);
-                                continue;
+                                break;
                             } 
-                            else if (assignment is RunAssignment run)
+                            else if (assignment.type is RunAssignment run)
                             {
                                 if (isdebug)
                                 {
@@ -107,7 +107,7 @@ namespace Automa.Source.Core
                                 if(run.Properties.Target is null)
                                 {
                                     run.Run();
-                                    continue;
+                                    break;
                                 }
 
                                 Variable? findVariable = FindVariable(run.Properties.Target, Variables);
@@ -116,26 +116,27 @@ namespace Automa.Source.Core
                                 {
                                     int vIndex = Variables.IndexOf(findVariable);
                                     Variables[vIndex].value = run.Run();
-                                    continue;
+                                    break;
                                 }
 
                                 Variables.Add(new(run.Properties.Target, run.Run()));
-                                continue;
+                                break;
                             }
 
                             break;
                         case IfBlock block:
+                            prevSucc = false;
 
                             if (prevSucc)
                             {
-                                prevSucc = false;
+                                break;
                             }
                             
                             block.Variable = Variables;
 
                             if (isdebug)
                             {
-                                Console.WriteLine("[Debug] Executing IFBlock with {0} instructions", block.Instructions.Count);
+                                Console.WriteLine("[Debug] Executing IFBlock instructions");
                             }
 
                             if (block.expression is EqualTo eq)
@@ -148,7 +149,7 @@ namespace Automa.Source.Core
                                     //Console.WriteLine("Debug: Block is Executing");
                                     
                                     block.ExecuteBlock();
-                                    prevSucc = !prevSucc;
+                                    prevSucc = true;
                                     Variables = block.Variable.Intersect(Variables).ToList();
                                 }
 
@@ -160,7 +161,7 @@ namespace Automa.Source.Core
                                 {
                                     //Console.WriteLine("Debug: Block is Executing");
                                     block.ExecuteBlock();
-                                    prevSucc = !prevSucc;
+                                    prevSucc = true;
                                     Variables = block.Variable.Intersect(Variables).ToList();
                                 }
                             }
@@ -168,19 +169,16 @@ namespace Automa.Source.Core
                             break;
                         case Elif elif:
 
-                            //Cache.CurrentBlock = elif.Variables;
+                            if (prevSucc)
+                            {
+                                break;
+                            }
 
                             elif.Variable = Variables; // update global var just incase
 
-
-                            if (prevSucc)
-                            {
-                                continue;
-                            }
-
                             if (isdebug)
                             {
-                                Console.WriteLine("[Debug] Executing EliFBlock with {0} instructions", elif.Instructions.Count);
+                                Console.WriteLine("[Debug] Executing EliFBlock instructions");
                             }
 
                             if (elif.expression is EqualTo EQ)
@@ -190,7 +188,7 @@ namespace Automa.Source.Core
                                 {
                                     elif.ExecuteBlock();
                                     Variables = elif.Variable.Intersect(Variables).ToList();
-                                    prevSucc = !prevSucc;
+                                    prevSucc = true;
                                 }
                             }else if(elif.expression is NotEqualTo NEQ)
                             {
@@ -199,7 +197,7 @@ namespace Automa.Source.Core
                                 {
                                     elif.ExecuteBlock();
                                     Variables = elif.Variable.Intersect(Variables).ToList();
-                                    prevSucc = !prevSucc;
+                                    prevSucc = true;
                                 }
                             }
 
@@ -210,16 +208,17 @@ namespace Automa.Source.Core
 
                             if (prevSucc)
                             {
-                                continue;
+                                break;
                             }
 
                             els.Variable = Variables;
 
                             if (isdebug)
                             {
-                                Console.WriteLine("[Debug] Executing ElseBlock with {0} instructions", els.Instructions.Count);
+                                Console.WriteLine("[Debug] Executing ElseBlock instructions");
                             }
                             els.ExecuteBlock();
+                            prevSucc = !prevSucc;
                             Variables = els.Variable.Intersect(Variables).ToList();
                             break;
 
@@ -227,6 +226,7 @@ namespace Automa.Source.Core
                             break;
 
                     }
+                    Current = Current.Next;
                 }
                 return 0;
             }

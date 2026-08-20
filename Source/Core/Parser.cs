@@ -1,6 +1,7 @@
 ﻿using Automa.Source.Utility;
 using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 using System.Runtime;
 using System.Text;
 using System.Threading.Tasks.Dataflow;
@@ -113,21 +114,18 @@ namespace Automa.Source.Core
             }
         }
 
-        private T? ParseStatement<T>(LexerToken Starting, LexerType Ending = LexerType.Token_RBrace)
+        private T? ParseStatement<T>(LexerToken Starting,out int tokensConsumed, LexerType Ending = LexerType.Token_RBrace)
         {
             try
             {
-
-
+                NestBuilder Bob = new();
                 Type type = typeof(T);
-                List<object> Instructions = new();
                 List<LexerToken> expression = new();
                 int StartingIndex = LexTok.IndexOf(Starting);
                 Expression? expr = null;
                 LexerType? PrevTok = null;
                 bool inBlock = false, 
                         inParen = false,
-                        validParen = false,
                         parseExpression = false,
                         isAssign = false;
                 int depth = 0, pdepth = 0; // brace depth and parenthesis depth
@@ -143,9 +141,15 @@ namespace Automa.Source.Core
                     Console.WriteLine("[Debug] Statement Tokens (Statement Token total: {0}):",Toks.Count);
                 }
 
-                foreach (LexerToken Current in Toks)
+                int tc = 0;
+
+                // Iterate through all the tokens
+                for (int i = 0; i < Toks.Count;i++)
                 {
+                    LexerToken Current = Toks[i];
                     LexerType CurrentType = Current.TokenType;
+
+                    tc++;
 
                     if (isdebug)
                     {
@@ -190,35 +194,56 @@ namespace Automa.Source.Core
                         // If-else control flow.
                         if (content is "If" or "Elif" or "Else")
                         {
-                            if (inBlock)
+                            if (!inBlock)
                             {
-                                if (content is "If")
-                                {
-                                    Instructions.Add(ParseStatement<IfBlock>(Current) ?? throw new Exception($"Malformed Block at Line: {Current.Line}"));
-                                }
-                                else if (content is "Elif")
-                                {
-                                    Instructions.Add(ParseStatement<Elif>(Current) ?? throw new Exception($"Malformed Block at Line: {Current.Line}"));
-                                }
-                                else if (content is "Else")
-                                {
-                                    Instructions.Add(ParseStatement<Else>(Current) ?? throw new Exception($"Malformed Block at Line: {Current.Line}"));
-                                }
-                                continue;
-                            }
-                            else
-                            {
-                                if(content is "If" or "Elif" or "Else")
-                                {
                                     CurrentBlock = content;
                                     inBlock = true;
                                     continue;
-                                }
+                            }
+                            else
+                            {
+                                    if (CurrentBlock is "If")
+                                    {
+                                        Block? parsedBlock = ParseStatement<IfBlock>(Current, out int skip);
+
+                                        if (parsedBlock is null)
+                                        {
+                                            throw new Exception($"Malformed block at line: {Current.Line}");
+                                        }
+
+                                        Bob.AddNode(parsedBlock);
+
+
+                                        if (skip > 0) i += (skip - 1);
+                                    }
+                                    else if (CurrentBlock is "Elif")
+                                    {
+                                        Block? parsedBlock = ParseStatement<Elif>(Current, out int skip);
+
+                                        if (parsedBlock is null)
+                                        {
+                                            throw new Exception($"Malformed block at line: {Current.Line}");
+                                        }
+
+                                        Bob.AddNode(parsedBlock);
+                                        if (skip > 0) i += (skip - 1);
+                                    }
+                                    else if (CurrentBlock is "Else")
+                                    {
+                                        Block? parsedBlock = ParseStatement<Else>(Current, out int skip);
+
+                                        if (parsedBlock is null)
+                                        {
+                                            throw new Exception($"Malformed block at line: {Current.Line}");
+                                        }
+
+                                        Bob.AddNode(parsedBlock);
+                                        if (skip > 0) i += (skip - 1);
+                                    }
+                                continue;
                             }
 
                         }
-
-
 
                         if (isAssign || inParen) 
                         {
@@ -377,11 +402,11 @@ namespace Automa.Source.Core
                         {
                             if(CurrentContent.type is "identifier")
                             {
-                                Instructions.Add(new WriteInstruction(CurrentContent.value,true));
+                                Bob.AddNode(new WriteInstruction(CurrentContent.value, true));
                                 continue;
                             }
 
-                            Instructions.Add(new WriteInstruction(CurrentContent.value));
+                            Bob.AddNode(new WriteInstruction(CurrentContent.value));
 
                             // reset
                             CurrentContent = ("", "");
@@ -392,7 +417,9 @@ namespace Automa.Source.Core
                         }
                         else if(CurrentInstruction is "Read")
                         {
-                            Instructions.Add(new ReadAssign("null", CurrentContent.value));
+                            Bob.AddNode(new AssignInstruction(new ReadAssign("null", CurrentContent.value)));
+
+
 
                             // reset
                             CurrentContent = ("", "");
@@ -403,7 +430,7 @@ namespace Automa.Source.Core
                         }
                         else if(CurrentInstruction is "Run")
                         {
-                            Instructions.Add(new RunAssignment(("null",CurrentContent.value)));
+                            Bob.AddNode(new AssignInstruction(new RunAssignment(("null",CurrentContent.value))));
 
                             // reset
                             CurrentContent = ("", "");
@@ -420,8 +447,8 @@ namespace Automa.Source.Core
 
                             if(CurrentContent.type is "Read")
                             {
-                                Instructions.Add(new ReadAssign(varname, CurrentContent.value));
-
+                                Bob.AddNode(new AssignInstruction(new ReadAssign(varname, CurrentContent.value)));
+                                
                                 // reset
                                 CurrentContent = ("", "");
                                 CurrentInstruction = "";
@@ -431,7 +458,7 @@ namespace Automa.Source.Core
                             }
                             else if(CurrentContent.type is "Run")
                             {
-                                Instructions.Add(new RunAssignment((varname,CurrentContent.value)));
+                                Bob.AddNode(new AssignInstruction(new RunAssignment((varname, CurrentContent.value))));
 
                                 // reset
                                 CurrentContent = ("", "");
@@ -451,7 +478,7 @@ namespace Automa.Source.Core
                                 _type = VariableType.Identifier;
                             }
 
-                            Instructions.Add(new VariableAssign(new(varname, CurrentContent.value,_type)));
+                            Bob.AddNode(new AssignInstruction(new VariableAssign(new(varname, CurrentContent.value, _type))));
                             // reset
                             CurrentContent = ("", "");
                             CurrentInstruction = "";
@@ -486,19 +513,27 @@ namespace Automa.Source.Core
                     }
                 }
 
+                tokensConsumed = tc;
+
                 if (type == typeof(IfBlock))
                 {
-                    IfBlock block = new(expr, Instructions, new());
+                    IfBlock block = new IfBlock(expr, new());
+                    block.Body = Bob.Build();
+
                     return (T)(object)block;
                 }
                 else if (type == typeof(Elif))
                 {
-                    Elif block = new(expr, Instructions, new());
+                    Elif block = new Elif(expr, new());
+                    block.Body = Bob.Build();
+
                     return (T)(object)block;
                 }
                 else if (type == typeof(Else))
                 {
-                    Else block = new(Instructions, new());
+                    Else block = new Else(new());
+                    block.Body = Bob.Build();
+
                     return (T)(object)block;
                 }
 
@@ -506,17 +541,16 @@ namespace Automa.Source.Core
             }catch(Exception ex)
             {
                 Console.Error.WriteLine("Parser Statement Error: {0}",ex);
+                tokensConsumed = 0;
                 return (T)(object)null;
             }
         }
 
 
-        private List<object> _Parse()
+        private Instruction _Parse()
         {
             try
             {
-                List<object> Instructions = new();
-                List<object> BlockInstructions = new();
                 (string content,string type) CC =( "", ""); // Current Content
                 bool inBlock = false,
                     inParen = false,
@@ -540,8 +574,9 @@ namespace Automa.Source.Core
                     Console.WriteLine("[Debug] TopLevel Statement (Total Tokens: {0}):",_Tokens.Length);
                 }
 
-                foreach (LexerToken Current in _Tokens)
+                for (int i = 0; i < _Tokens.Length;i++)
                 {
+                    LexerToken Current = _Tokens[i];
                     LexerType CT = Current.TokenType;
 
                     if (isdebug)
@@ -555,7 +590,17 @@ namespace Automa.Source.Core
                     {
 
                         expr = ParseExpression(expression); // Determine Expression
-                        
+
+                        if (CB is "If") // add Block nodes before  the next token comes;
+                        {
+                            NodeBuilder.AddNode(new IfBlock(expr, new()));
+                        }
+                        else if (CB is "Elif")
+                        {
+                            NodeBuilder.AddNode(new Elif(expr, new()));
+                        }
+
+
                         parseExpression = false;
                         expression.Clear();
                         continue;
@@ -598,15 +643,18 @@ namespace Automa.Source.Core
                                 {
                                     if(ident is "If")
                                     {
-                                        BlockInstructions.Add(ParseStatement<IfBlock>(Current) ?? throw new Exception($"Parsing Error: Nested if is malformed at line: {Current.Line}"));
+                                        NodeBuilder.AddNode(ParseStatement<IfBlock>(Current,out int tokenConsumed),true);
+                                        if(tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
                                     }
                                     else if(ident is "Elif")
                                     {
-                                        BlockInstructions.Add(ParseStatement<Elif>(Current) ?? throw new Exception($"Parsing Error: Nested if is malformed at line: {Current.Line}"));
+                                        NodeBuilder.AddNode(ParseStatement<Elif>(Current, out int tokenConsumed),true);
+                                        if (tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
                                     }
                                     else if(ident is "Else")
                                     {
-                                        BlockInstructions.Add(ParseStatement<Else>(Current) ?? throw new Exception($"Parsing Error: Nested if is malformed at line: {Current.Line}"));
+                                        NodeBuilder.AddNode(ParseStatement<Else>(Current, out int tokenConsumed),true);
+                                        if (tokenConsumed > 0) i += (tokenConsumed - 1);// Jump to the end of the block
                                     }
                                     continue;
                                 }
@@ -615,6 +663,12 @@ namespace Automa.Source.Core
                                     CI = ident;
                                     CB = CI;
                                     inBlock = true;
+
+                                    if(ident is "Else")
+                                    {
+                                        NodeBuilder.AddNode(new Else(new()));
+                                    }
+                                    
                                     continue;
                                 }
     
@@ -707,7 +761,7 @@ namespace Automa.Source.Core
 
                                 if(CC.type == "identifier")
                                 {
-                                    BlockInstructions.Add(new WriteInstruction(CC.content,true));
+                                    NodeBuilder.AddNode(new WriteInstruction(CC.content, true),true);
                                     //reset all before proceeding to the next
 
                                     CI = string.Empty; // erase CI for the next...
@@ -716,7 +770,7 @@ namespace Automa.Source.Core
                                     continue;
                                 }
 
-                                BlockInstructions.Add(new WriteInstruction(CC.content));
+                                NodeBuilder.AddNode(new WriteInstruction(CC.content),true);
 
                                 //reset all before proceeding to the next
 
@@ -731,7 +785,7 @@ namespace Automa.Source.Core
 
                                 if (CC.type == "identifier")
                                 {
-                                    Instructions.Add(new WriteInstruction(CC.content, true));
+                                    NodeBuilder.AddNode(new WriteInstruction(CC.content,true));
                                     
                                 //reset all before proceeding to the next
 
@@ -742,7 +796,7 @@ namespace Automa.Source.Core
                                 continue;
                                 }
 
-                                Instructions.Add(new WriteInstruction(CC.content));
+                                NodeBuilder.AddNode(new WriteInstruction(CC.content));
 
                                 //reset all before proceeding to the next
 
@@ -758,7 +812,7 @@ namespace Automa.Source.Core
                         {
                             if(inBlock && depth is 1)
                             {
-                                BlockInstructions.Add(new ReadAssign("null", CC.content));
+                                NodeBuilder.AddNode(new AssignInstruction(new ReadAssign("null", CC.content)),inBlock);
 
                                 //reset all before proceeding to the next
 
@@ -771,8 +825,7 @@ namespace Automa.Source.Core
 
                             if(!inBlock && depth is 0)
                             {
-                                Instructions.Add(new ReadAssign("null", CC.content));
-
+                                NodeBuilder.AddNode(new AssignInstruction(new ReadAssign("null", CC.content)));
                                 //reset all before proceeding to the next
 
                                 CI = string.Empty; // erase CI for the next...
@@ -787,7 +840,8 @@ namespace Automa.Source.Core
                         {
                             if(inBlock && depth is 1)
                             {
-                                BlockInstructions.Add(new RunAssignment(("null", CC.content)));
+                                NodeBuilder.AddNode(new AssignInstruction((new RunAssignment(("null", CC.content)))),inBlock);
+
                                 //reset all before proceeding to the next
 
                                 CI = string.Empty; // erase CI for the next...
@@ -799,7 +853,8 @@ namespace Automa.Source.Core
 
                             if(!inBlock && depth is 0)
                             {
-                                Instructions.Add(new RunAssignment(("null",CC.content)));
+                                NodeBuilder.AddNode(new AssignInstruction((new RunAssignment(("null", CC.content)))));
+
                                 //reset all before proceeding to the next
 
                                 CI = string.Empty; // erase CI for the next...
@@ -829,7 +884,7 @@ namespace Automa.Source.Core
 
                                 if(inBlock && depth is 1)
                                 {
-                                    BlockInstructions.Add(new ReadAssign(varname, CC.content));
+                                    NodeBuilder.AddNode(new AssignInstruction(new ReadAssign(varname, CC.content)),inBlock);
                                     //reset all before proceeding to the next
 
                                     CI = string.Empty; // erase CI for the next...
@@ -841,7 +896,7 @@ namespace Automa.Source.Core
 
                                 if(!inBlock && depth is 0)
                                 {
-                                    Instructions.Add(new ReadAssign(varname, CC.content));
+                                    NodeBuilder.AddNode(new AssignInstruction(new ReadAssign(varname, CC.content)));
                                     //reset all before proceeding to the next
 
                                     CI = string.Empty; // erase CI for the next...
@@ -855,7 +910,7 @@ namespace Automa.Source.Core
                             {
                                 if (inBlock && depth is 1)
                                 {
-                                    BlockInstructions.Add(new RunAssignment((varname, CC.content)));
+                                    NodeBuilder.AddNode(new AssignInstruction(new RunAssignment((varname,CC.content))), inBlock);
                                     //reset all before proceeding to the next
 
                                     CI = string.Empty; // erase CI for the next...
@@ -867,7 +922,7 @@ namespace Automa.Source.Core
 
                                 if (!inBlock && depth is 0)
                                 {
-                                    Instructions.Add(new RunAssignment((varname, CC.content)));
+                                    NodeBuilder.AddNode(new AssignInstruction(new RunAssignment((varname, CC.content))), inBlock);
                                     //reset all before proceeding to the next
 
                                     CI = string.Empty; // erase CI for the next...
@@ -880,7 +935,7 @@ namespace Automa.Source.Core
 
                             if(inBlock && depth is 1)
                             {
-                                BlockInstructions.Add(new VariableAssign(new(varname, CC.content, _type)));
+                                NodeBuilder.AddNode(new AssignInstruction(new VariableAssign(new(varname, CC.content, _type))),inBlock);
                                 //reset all before proceeding to the next
 
                                 CI = string.Empty; // erase CI for the next...
@@ -892,7 +947,7 @@ namespace Automa.Source.Core
 
                             if(!inBlock && depth is 0)
                             {
-                                Instructions.Add(new VariableAssign(new(varname, CC.content, _type)));
+                                NodeBuilder.AddNode(new AssignInstruction(new VariableAssign(new(varname, CC.content, _type))));
                                 //reset all before proceeding to the next
 
                                 CI = string.Empty; // erase CI for the next...
@@ -979,19 +1034,6 @@ namespace Automa.Source.Core
 
                         if( inBlock && depth == 1)
                         {
-                            if(CB is "If")
-                            {
-                                Instructions.Add(new IfBlock(expr,new(BlockInstructions), new()));
-                            }else if(CB is "Elif")
-                            {
-                                Instructions.Add(new Elif(expr, new(BlockInstructions), new()));
-                            }
-                            else if(CB is "Else")
-                            {
-                                Instructions.Add(new Else(new(BlockInstructions), new()));
-                            }
-
-                            BlockInstructions.Clear();
                             depth = 0;
                             CB = "";
                             inBlock = false;
@@ -1007,7 +1049,7 @@ namespace Automa.Source.Core
                     prevTok = CT;
                 }
 
-                return Instructions;
+                return NodeBuilder.Build();
             }catch(Exception ex)
             {
                 Console.WriteLine("Parsing Error; {0}", ex);

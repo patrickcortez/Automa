@@ -547,7 +547,7 @@ namespace Automa.Source.Core
         }
 
 
-        private Instruction _Parse()
+        private Instruction Parse()
         {
             try
             {
@@ -556,6 +556,7 @@ namespace Automa.Source.Core
                     inParen = false,
                     validParen = false,
                     parseExpression = false,
+                    isArith = false,
                     isAssign = false;
                 int depth = 0, pdepth = 0; // if-block depth and parenthesis depth
                 string CI = "None"; // Current Instruction,
@@ -564,7 +565,7 @@ namespace Automa.Source.Core
 
                 LexerToken[] _Tokens = LexTok;
                 Expression? expr = null;
-
+                LexerToken? Peek = null;
 
 
                 List<LexerToken> expression = new();
@@ -578,6 +579,17 @@ namespace Automa.Source.Core
                 {
                     LexerToken Current = _Tokens[i];
                     LexerType CT = Current.TokenType;
+                    int peekIndex = i + 1;
+
+                    if ( peekIndex < _Tokens.Length)
+                    {
+                        Peek = _Tokens[i + 1];
+
+                        if(Peek.Value.TokenType is LexerType.TokenArith or LexerType.Token_Minus && CT is LexerType.TokenInt && isAssign)
+                        {
+                            isArith = true;
+                        }
+                    }
 
                     if (isdebug)
                     {
@@ -759,6 +771,7 @@ namespace Automa.Source.Core
                             if (inBlock && depth == 1)
                             {
 
+
                                 if(CC.type == "identifier")
                                 {
                                     NodeBuilder.AddNode(new WriteInstruction(CC.content, true),true);
@@ -933,7 +946,19 @@ namespace Automa.Source.Core
                                 }
                             }
 
-                            if(inBlock && depth is 1)
+                            if (isArith)
+                            {
+                                if(inBlock && depth is 1)
+                                {
+                                    NodeBuilder.AddNode( new ArithemticAssign())
+                                }
+
+                                // Handle Arithemtic here
+                                isArith = false;
+                                continue;
+                            }
+
+                            if (inBlock && depth is 1)
                             {
                                 NodeBuilder.AddNode(new AssignInstruction(new VariableAssign(new(varname, CC.content, _type))),inBlock);
                                 //reset all before proceeding to the next
@@ -1061,7 +1086,7 @@ namespace Automa.Source.Core
         {
             try
             {
-                var Data = _Parse(); // to be used
+                var Data = Parse(); // to be used
 
                 Executor exec = new(Data); // only pass instructions not the entire variables
                 

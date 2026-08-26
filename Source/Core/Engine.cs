@@ -25,7 +25,10 @@ namespace Automa.Source.Core
         // Plus,Parenthesis Depth and minus
         // Multiplication and Division is up-to the users to create using upcoming while-loop and functions.
 
-        private LexerToken[]? _Tokenize() // Lexer & Tokenizer
+        private string[] keyWords = ["If", "Elif","Else"];
+        private string lastIdent = "";
+
+        private LexerToken[]? Tokenize() // Lexer & Tokenizer
         {
             try
             {
@@ -90,6 +93,7 @@ namespace Automa.Source.Core
                             if(identifier.Length > 0) // always check if ident is not empty
                             {
                                 Tokens.Add(new(LexerType.Token_Identifier, LineNo, identifier.ToString()));
+                                lastIdent = identifier.ToString();
                                 identifier.Clear();
                             }
                         }
@@ -215,7 +219,7 @@ namespace Automa.Source.Core
 
                         if (lasttoken.Line == LineNo)
                         {
-                            if (lasttoken.TokenType != LexerType.Token_SemiColon && lasttoken.TokenType != LexerType.Token_LBrace && lasttoken.TokenType != LexerType.Token_RBrace)
+                            if (lasttoken.TokenType != LexerType.Token_SemiColon && lasttoken.TokenType != LexerType.Token_LBrace && lasttoken.TokenType != LexerType.Token_RBrace && !keyWords.Contains(lastIdent))
                             {
                                 throw new Exception($"Missing ';' in line: {LineNo}");
                             }
@@ -250,7 +254,7 @@ namespace Automa.Source.Core
                     return 1;
                 }
 
-                LexerToken[] toks = _Tokenize() ?? [];
+                LexerToken[] toks = Tokenize() ?? [];
                 
                 if(isdebug && toks.Length > 0)
                 {

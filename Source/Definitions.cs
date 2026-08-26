@@ -1,8 +1,6 @@
 ﻿using Automa.Source.Core;
 using Automa.Source.Utility;
-using System.Data;
 using System.Diagnostics;
-using System.Reflection;
 using System.Text;
 
 namespace Automa.Source
@@ -71,13 +69,6 @@ namespace Automa.Source
         }
     }
 
-    internal enum TokenType
-    {
-        If,
-        Elif,
-        Else,
-        Null
-    }
     internal enum AssignmentType
     {
         Variable,
@@ -102,7 +93,17 @@ namespace Automa.Source
 
     internal record ReadAssign(string target,string Prompt) : AssignType;
 
-    internal record AssignInstruction(AssignType type) : Instruction; 
+    internal record AssignInstruction(AssignType type) : Instruction;
+
+    internal record ArithemticAssign(Instruction node) : AssignType
+    {
+        public int ExecuteExpression()
+        {
+            // Put Arithmetic handler here...
+
+            return 0;
+        }
+    }
 
     internal record Variable(string _name, string _value,VariableType _type = VariableType.String)
     {
@@ -114,7 +115,18 @@ namespace Automa.Source
 
     internal abstract record Block : Instruction
     {
-       public Instruction? Body { get; set; }
+        public Instruction? Body { get; set; } = null;
+    }
+
+    
+
+    internal record WhileBlock(Expression expr) : Block // While( expr ) { }
+    {
+        public Instruction? next { get; set; } = null;
+
+        // Make execute block
+
+
     }
 
     internal record IfBlock(Expression expression, List<Variable> Variables) : Block // if(condition)
@@ -158,7 +170,7 @@ namespace Automa.Source
 
     // Expressions
 
-    internal abstract record Expression();
+    internal abstract record Expression(); // Soon to be added: >,<,>= and <=
 
     internal record VariableExpression(string VariableName) : Expression
     {

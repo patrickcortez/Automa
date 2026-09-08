@@ -11,6 +11,7 @@ namespace Automa.Source.Utility
     internal static class Utils
     {
 
+
         public static void Print(string Title, object Content, PrintConfiguration? config = null)
         {
             string newContent = string.Empty;

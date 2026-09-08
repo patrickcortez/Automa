@@ -36,8 +36,54 @@ namespace Automa.Source
         Token_Not, // !
         TokenArith, // 2 + 2 - 2
         Token_Identifier, // Write,Read etc...
+        Token_Multiply, //*
+        Token_Divide, // /
+        Token_KeyWord,
         Token_None // Default value;
     }
+
+    //--- for arithmetic parser
+
+    internal abstract record class ArithmeticNode;
+
+    internal record class NumberNode(int value) : ArithmeticNode;
+
+    internal record class BinaryOpNode(ArithmeticNode left, char Op, ArithmeticNode right) : ArithmeticNode
+    {
+        public int ExecuteOperation()
+        {
+
+            if(left is NumberNode number && right is NumberNode number2)
+            {
+                if(Op is '+')
+                {
+                    return number.value + number2.value;
+                }else if(Op is '-')
+                {
+                    return number.value - number2.value;
+                }
+            }
+            else
+            {
+                if(left is BinaryOpNode OpLeft)
+                {
+                    NumberNode rn = (NumberNode)right;
+                    return (Op is '+') ? OpLeft.ExecuteOperation() + rn.value : OpLeft.ExecuteOperation() - rn.value;
+
+                }
+                else if(right is BinaryOpNode OpRight)
+                {
+                    NumberNode ln = (NumberNode)left;
+                    return (Op is '+') ? ln.value + OpRight.ExecuteOperation() : ln.value - OpRight.ExecuteOperation();
+                    
+                }
+            }
+
+            return 0;
+        }
+    }
+
+    //---
 
     internal struct LexerToken // Lexer Token definition
     {

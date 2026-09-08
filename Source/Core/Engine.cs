@@ -92,9 +92,22 @@ namespace Automa.Source.Core
                         {
                             if(identifier.Length > 0) // always check if ident is not empty
                             {
-                                Tokens.Add(new(LexerType.Token_Identifier, LineNo, identifier.ToString()));
-                                lastIdent = identifier.ToString();
-                                identifier.Clear();
+                                string ident = identifier.ToString();
+
+                                if (keyWords.Contains(ident))
+                                {
+                                    Tokens.Add(new(LexerType.Token_KeyWord, LineNo,ident));
+                                    lastIdent = ident;
+                                    identifier.Clear();
+                                }
+                                else
+                                {
+                                    Tokens.Add(new(LexerType.Token_Identifier, LineNo, identifier.ToString()));
+                                    lastIdent = identifier.ToString();
+                                    identifier.Clear();
+                                }
+
+
                             }
                         }
 
@@ -203,6 +216,13 @@ namespace Automa.Source.Core
                             {
                                 Tokens.Add(new(LexerType.Token_Not, LineNo));
                                 continue;
+                            }else if( c is '*')
+                            {
+                                Tokens.Add(new LexerToken(LexerType.Token_Multiply, LineNo));
+                                continue;
+                            }else if(c is '/')
+                            {
+                                Tokens.Add(new LexerToken(LexerType.Token_Divide, LineNo));
                             }
                         }
                         else if (isInQoutes) // String Literal

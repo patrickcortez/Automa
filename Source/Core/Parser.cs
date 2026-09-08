@@ -563,6 +563,9 @@ namespace Automa.Source.Core
                 LexerType prevTok = LexerType.Token_None;
                 string  CB = ""; // Logical operator and Current Block
 
+                // Arithmetic tokens for Arithmetic parser;
+                List<LexerToken> ArithmeticTokens = new();
+
                 LexerToken[] _Tokens = LexTok;
                 Expression? expr = null;
                 LexerToken? Peek = null;
@@ -585,7 +588,8 @@ namespace Automa.Source.Core
                     {
                         Peek = _Tokens[i + 1];
 
-                        if(Peek.Value.TokenType is LexerType.TokenArith or LexerType.Token_Minus && CT is LexerType.TokenInt && isAssign)
+                        // Arithmetic toggler
+                        if(Peek.Value.TokenType is LexerType.Token_Add or LexerType.Token_Minus && CT is LexerType.TokenInt && isAssign && !isArith)
                         {
                             isArith = true;
                         }
@@ -639,67 +643,68 @@ namespace Automa.Source.Core
                     {
                         prevTok = CT;
 
-                        if (isAssign && inParen) 
+                        if (isAssign && inParen)
                         {
                             throw new Exception($"Cannot Assign inside parenthesis! Error on Line: {Current.Line}");
                         }
 
                         string ident = Current.GetContent();
-                        
 
-                            
-                            if(ident is "If" or "Elif" or "Else")
+
+
+                        if (ident is "If" or "Elif" or "Else")
+                        {
+
+                            if (inBlock && depth == 1)
                             {
-
-                                if (inBlock && depth == 1)
+                                if (ident is "If")
                                 {
-                                    if(ident is "If")
-                                    {
-                                        NodeBuilder.AddNode(ParseStatement<IfBlock>(Current,out int tokenConsumed),true);
-                                        if(tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
-                                    }
-                                    else if(ident is "Elif")
-                                    {
-                                        NodeBuilder.AddNode(ParseStatement<Elif>(Current, out int tokenConsumed),true);
-                                        if (tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
-                                    }
-                                    else if(ident is "Else")
-                                    {
-                                        NodeBuilder.AddNode(ParseStatement<Else>(Current, out int tokenConsumed),true);
-                                        if (tokenConsumed > 0) i += (tokenConsumed - 1);// Jump to the end of the block
-                                    }
-                                    continue;
+                                    NodeBuilder.AddNode(ParseStatement<IfBlock>(Current, out int tokenConsumed), true);
+                                    if (tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
                                 }
-                                else
+                                else if (ident is "Elif")
                                 {
-                                    CI = ident;
-                                    CB = CI;
-                                    inBlock = true;
-
-                                    if(ident is "Else")
-                                    {
-                                        NodeBuilder.AddNode(new Else(new()));
-                                    }
-                                    
-                                    continue;
+                                    NodeBuilder.AddNode(ParseStatement<Elif>(Current, out int tokenConsumed), true);
+                                    if (tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
                                 }
-    
-                                
+                                else if (ident is "Else")
+                                {
+                                    NodeBuilder.AddNode(ParseStatement<Else>(Current, out int tokenConsumed), true);
+                                    if (tokenConsumed > 0) i += (tokenConsumed - 1);// Jump to the end of the block
+                                }
+                                continue;
+                            }
+                            else
+                            {
+                                CI = ident;
+                                CB = CI;
+                                inBlock = true;
+
+                                if (ident is "Else")
+                                {
+                                    NodeBuilder.AddNode(new Else(new()));
+                                }
+
+                                continue;
                             }
 
 
-                        
+                        }
+
+
+
 
                         if (isAssign || inParen) // if identifier is in paren or right hand of the assignment ( Right )
                         {
                             if (Keywords.Contains(ident) && isAssign)
                             {
-                                if(ident is "Read" or "Run")
+                                if (ident is "Read" or "Run")
                                 {
                                     CC.type = ident;
                                     continue;
                                 }
-                            }else if(!isAssign && Keywords.Contains(ident))
+                            }
+                            else if (!isAssign && Keywords.Contains(ident))
                             {
                                 if (ident is "Read" or "Run")
                                 {
@@ -721,9 +726,19 @@ namespace Automa.Source.Core
                     else if (CT is LexerType.Token_LParen) // (
                     {
                         prevTok = CT;
+
+
+
+
                         if (inParen)
                         {
                             pdepth++;
+                            continue;
+                        }
+
+                        if (isArith)
+                        {
+                            ArithmeticTokens.Add(Current);
                             continue;
                         }
 
@@ -733,14 +748,28 @@ namespace Automa.Source.Core
                         }
 
                         inParen = true;
+
+                        if (isAssign)
+                        {
+                            ArithmeticTokens.Add(Current); // Add just incase it is arithmetic: (( or (2+0)
+                        }
+
                         continue;
                     }
                     else if (CT is LexerType.Token_RParen) // )
                     {
                         prevTok = CT;
+
+
                         if (pdepth > 0)
                         {
                             pdepth--;
+                            continue;
+                        }
+
+                        if (isArith)
+                        {
+                            ArithmeticTokens.Add(Current);
                             continue;
                         }
 
@@ -772,9 +801,9 @@ namespace Automa.Source.Core
                             {
 
 
-                                if(CC.type == "identifier")
+                                if (CC.type == "identifier")
                                 {
-                                    NodeBuilder.AddNode(new WriteInstruction(CC.content, true),true);
+                                    NodeBuilder.AddNode(new WriteInstruction(CC.content, true), true);
                                     //reset all before proceeding to the next
 
                                     CI = string.Empty; // erase CI for the next...
@@ -783,7 +812,7 @@ namespace Automa.Source.Core
                                     continue;
                                 }
 
-                                NodeBuilder.AddNode(new WriteInstruction(CC.content),true);
+                                NodeBuilder.AddNode(new WriteInstruction(CC.content), true);
 
                                 //reset all before proceeding to the next
 
@@ -793,20 +822,20 @@ namespace Automa.Source.Core
                                 continue;
                             }
 
-                            if(!inBlock && depth == 0)
+                            if (!inBlock && depth == 0)
                             {
 
                                 if (CC.type == "identifier")
                                 {
-                                    NodeBuilder.AddNode(new WriteInstruction(CC.content,true));
-                                    
-                                //reset all before proceeding to the next
+                                    NodeBuilder.AddNode(new WriteInstruction(CC.content, true));
 
-                                CI = string.Empty; // erase CI for the next...
-                                CC = ("", "");
-                                validParen = false;
+                                    //reset all before proceeding to the next
 
-                                continue;
+                                    CI = string.Empty; // erase CI for the next...
+                                    CC = ("", "");
+                                    validParen = false;
+
+                                    continue;
                                 }
 
                                 NodeBuilder.AddNode(new WriteInstruction(CC.content));
@@ -821,11 +850,11 @@ namespace Automa.Source.Core
                             }
 
                         }
-                        else if(CI is "Read" ) // STDIN
+                        else if (CI is "Read") // STDIN
                         {
-                            if(inBlock && depth is 1)
+                            if (inBlock && depth is 1)
                             {
-                                NodeBuilder.AddNode(new AssignInstruction(new ReadAssign("null", CC.content)),inBlock);
+                                NodeBuilder.AddNode(new AssignInstruction(new ReadAssign("null", CC.content)), inBlock);
 
                                 //reset all before proceeding to the next
 
@@ -836,7 +865,7 @@ namespace Automa.Source.Core
                                 continue;
                             }
 
-                            if(!inBlock && depth is 0)
+                            if (!inBlock && depth is 0)
                             {
                                 NodeBuilder.AddNode(new AssignInstruction(new ReadAssign("null", CC.content)));
                                 //reset all before proceeding to the next
@@ -849,11 +878,11 @@ namespace Automa.Source.Core
                             }
 
                         }
-                        else if(CI is "Run") // Run
+                        else if (CI is "Run") // Run
                         {
-                            if(inBlock && depth is 1)
+                            if (inBlock && depth is 1)
                             {
-                                NodeBuilder.AddNode(new AssignInstruction((new RunAssignment(("null", CC.content)))),inBlock);
+                                NodeBuilder.AddNode(new AssignInstruction((new RunAssignment(("null", CC.content)))), inBlock);
 
                                 //reset all before proceeding to the next
 
@@ -864,7 +893,7 @@ namespace Automa.Source.Core
                                 continue;
                             }
 
-                            if(!inBlock && depth is 0)
+                            if (!inBlock && depth is 0)
                             {
                                 NodeBuilder.AddNode(new AssignInstruction((new RunAssignment(("null", CC.content)))));
 
@@ -882,22 +911,23 @@ namespace Automa.Source.Core
                         {
                             VariableType _type = VariableType.String;
 
-                            if(CC.type is "int")
+                            if (CC.type is "int")
                             {
                                 _type = VariableType.Int;
-                            }else if(CC.type is "identifier")
+                            }
+                            else if (CC.type is "identifier")
                             {
                                 _type = VariableType.Identifier;
                             }
 
                             string varname = CI;
 
-                            if(CC.type is "Read")
+                            if (CC.type is "Read")
                             {
 
-                                if(inBlock && depth is 1)
+                                if (inBlock && depth is 1)
                                 {
-                                    NodeBuilder.AddNode(new AssignInstruction(new ReadAssign(varname, CC.content)),inBlock);
+                                    NodeBuilder.AddNode(new AssignInstruction(new ReadAssign(varname, CC.content)), inBlock);
                                     //reset all before proceeding to the next
 
                                     CI = string.Empty; // erase CI for the next...
@@ -907,7 +937,7 @@ namespace Automa.Source.Core
                                     continue;
                                 }
 
-                                if(!inBlock && depth is 0)
+                                if (!inBlock && depth is 0)
                                 {
                                     NodeBuilder.AddNode(new AssignInstruction(new ReadAssign(varname, CC.content)));
                                     //reset all before proceeding to the next
@@ -919,11 +949,11 @@ namespace Automa.Source.Core
                                     continue;
                                 }
                             }
-                            else if(CC.type is "Run")
+                            else if (CC.type is "Run")
                             {
                                 if (inBlock && depth is 1)
                                 {
-                                    NodeBuilder.AddNode(new AssignInstruction(new RunAssignment((varname,CC.content))), inBlock);
+                                    NodeBuilder.AddNode(new AssignInstruction(new RunAssignment((varname, CC.content))), inBlock);
                                     //reset all before proceeding to the next
 
                                     CI = string.Empty; // erase CI for the next...
@@ -948,19 +978,16 @@ namespace Automa.Source.Core
 
                             if (isArith)
                             {
-                                if(inBlock && depth is 1)
-                                {
-                                    NodeBuilder.AddNode( new ArithemticAssign())
-                                }
 
-                                // Handle Arithemtic here
+                                // handle arithmetic
+
                                 isArith = false;
                                 continue;
                             }
 
                             if (inBlock && depth is 1)
                             {
-                                NodeBuilder.AddNode(new AssignInstruction(new VariableAssign(new(varname, CC.content, _type))),inBlock);
+                                NodeBuilder.AddNode(new AssignInstruction(new VariableAssign(new(varname, CC.content, _type))), inBlock);
                                 //reset all before proceeding to the next
 
                                 CI = string.Empty; // erase CI for the next...
@@ -970,7 +997,7 @@ namespace Automa.Source.Core
                                 continue;
                             }
 
-                            if(!inBlock && depth is 0)
+                            if (!inBlock && depth is 0)
                             {
                                 NodeBuilder.AddNode(new AssignInstruction(new VariableAssign(new(varname, CC.content, _type))));
                                 //reset all before proceeding to the next
@@ -986,11 +1013,11 @@ namespace Automa.Source.Core
 
 
                     }
-                    else if(CT is LexerType.TokenString or LexerType.TokenInt) // Integer or String literals
+                    else if (CT is LexerType.TokenString or LexerType.TokenInt) // Integer or String literals
                     {
                         prevTok = CT;
 
-                        if((isAssign || inParen) && CC.type is "Read" or "Run")
+                        if ((isAssign || inParen) && CC.type is "Read" or "Run")
                         {
                             CC.content = Current.GetContent();
                             continue;
@@ -998,17 +1025,23 @@ namespace Automa.Source.Core
 
                         if (CT is LexerType.TokenInt)
                         {
+                            if (isArith)
+                            {
+                                ArithmeticTokens.Add(Current);
+                                continue;
+                            }
+
                             CC = (Current.GetContent(), "int");
                             continue;
                         }
 
-                        CC = (Current.GetContent(),"string");
+                        CC = (Current.GetContent(), "string");
                         continue;
                     }
-                    else if(CT is LexerType.Token_Equal) // =
+                    else if (CT is LexerType.Token_Equal) // =
                     {
 
-                        if(prevTok is LexerType.Token_Identifier)
+                        if (prevTok is LexerType.Token_Identifier)
                         {
                             isAssign = true;
                             prevTok = CT;
@@ -1022,7 +1055,7 @@ namespace Automa.Source.Core
                             continue;
                         }
 
-                        if(prevTok is LexerType.Token_Not)
+                        if (prevTok is LexerType.Token_Not)
                         {
                             isAssign = false;
                             prevTok = CT;
@@ -1031,7 +1064,7 @@ namespace Automa.Source.Core
 
                         throw new Exception($"Invalid Assignment Usage at line: {Current.Line}");
                     }
-                    else if(CT is LexerType.Token_LBrace) // {
+                    else if (CT is LexerType.Token_LBrace) // {
                     {
                         prevTok = LexerType.Token_LBrace;
                         if (inBlock)
@@ -1040,10 +1073,10 @@ namespace Automa.Source.Core
                             continue;
                         }
 
-                        
+
                         continue;
                     }
-                    else if(CT is LexerType.Token_RBrace) // }
+                    else if (CT is LexerType.Token_RBrace) // }
                     {
                         prevTok = LexerType.Token_RBrace;
                         if (inBlock && depth > 1)
@@ -1057,7 +1090,7 @@ namespace Automa.Source.Core
                             continue;
                         }
 
-                        if( inBlock && depth == 1)
+                        if (inBlock && depth == 1)
                         {
                             depth = 0;
                             CB = "";
@@ -1065,9 +1098,28 @@ namespace Automa.Source.Core
                         }
 
                     }
-                    else if(CT is LexerType.Token_Not) // !
+                    else if (CT is LexerType.Token_Not) // !
                     {
                         prevTok = CT;
+                        continue;
+                    }
+                    else if(CT is LexerType.Token_Add) // +
+                    {
+                        prevTok = CT;
+                        if (isArith)
+                        {
+                            ArithmeticTokens.Add(Current);
+                        }
+                        continue;
+                    }else if(CT is LexerType.Token_Minus) // -
+                    {
+                        prevTok = CT;
+
+                        if (isArith)
+                        {
+                            ArithmeticTokens.Add(Current);
+                        }
+
                         continue;
                     }
                    

@@ -2,8 +2,10 @@
 
 namespace Automa.Source.Core
 {
+
     internal class Executor(Instruction Current, List<Variable>? Variables = null)
     {
+
         public int Start(bool isdebug = false)
         {
             try

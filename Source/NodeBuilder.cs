@@ -28,7 +28,6 @@ namespace Automa.Source
 
         public Instruction? Build()
         {
-
             return Nest ?? null;
         }
     }

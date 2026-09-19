@@ -36,7 +36,7 @@ namespace Automa.Source
     {
         private static Instruction? AST = null;
 
-        public static void GobbleNode() // Gobble oldest node
+        public static void GobbleNode() // Gobble oldest node (Unsafe implementation, need to refactor later)
         {
             if(AST is null)
             {

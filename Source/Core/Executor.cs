@@ -228,7 +228,9 @@ namespace Automa.Source.Core
                             break;
 
                     }
+                    Instruction prev = Current;
                     Current = Current.Next;
+                    
                 }
                 return 0;
             }

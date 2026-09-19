@@ -13,9 +13,6 @@ namespace Automa.Source.Core
     {
         string[] Keywords = ["Write", "Read", "If","Elif","Else","Run"];
 
-        //string[] LogicalOperators = ["==", "!="];
-
-
         // Expression handling: logical or Arithmetic. Currently its Just Logical (for now)
         private Expression? ParseExpression(List<LexerToken> Tokens)
         {
@@ -638,8 +635,22 @@ namespace Automa.Source.Core
 
                     // Check Tokens
 
+                    if(CT is LexerType.Token_KeyWord && depth is 0) // Handle keywords
+                    {
+                        string keyword = Current.Content.ToString();
+
+                        if(keyword is "If" or "Elif" or "Else") // Conditional
+                        {
+                            // Move Keyword handling here
+                        }
+                        else
+                        {
+
+                        }
+                    }
+
                     // Identifier handling
-                    if (CT is LexerType.Token_Identifier)
+                    if (CT is LexerType.Token_Identifier) // Handle Variables
                     {
                         prevTok = CT;
 

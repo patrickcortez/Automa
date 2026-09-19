@@ -36,8 +36,8 @@ namespace Automa.Source
         Token_Not, // !
         TokenArith, // 2 + 2 - 2
         Token_Identifier, // Write,Read etc...
-        Token_Multiply, //*
-        Token_Divide, // /
+        Token_Multiply, // *
+        Token_Divide, // \
         Token_KeyWord,
         Token_None // Default value;
     }

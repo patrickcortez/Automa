@@ -58,7 +58,7 @@ namespace Automa.Source.Core
                     foreach (char c in line)
                     {
                         // Qoute Checking
-                        if (c is '"')
+                        if (c is '\"')
                         {
                             isInQoutes = !isInQoutes;
                             continue;
@@ -220,7 +220,7 @@ namespace Automa.Source.Core
                             {
                                 Tokens.Add(new LexerToken(LexerType.Token_Multiply, LineNo));
                                 continue;
-                            }else if(c is '/')
+                            }else if(c is '\\') 
                             {
                                 Tokens.Add(new LexerToken(LexerType.Token_Divide, LineNo));
                             }

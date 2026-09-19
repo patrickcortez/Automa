@@ -33,7 +33,7 @@ namespace Automa.Source.Core
 
 
                     continue;
-                }else if(tokentype is LexerType.Token_Add or LexerType.Token_Minus)
+                }else if(tokentype is LexerType.Token_Add or LexerType.Token_Minus) // + or -
                 {
                     if(tokentype is LexerType.Token_Minus)
                     {
@@ -47,7 +47,7 @@ namespace Automa.Source.Core
                     }
 
                     continue;
-                }else if(tokentype is LexerType.Token_LParen)
+                }else if(tokentype is LexerType.Token_LParen) // (
                 {
 
                     if (!inParen && pd ==0)
@@ -60,7 +60,7 @@ namespace Automa.Source.Core
                     }
 
                     continue;
-                }else if(tokentype is LexerType.Token_RParen)
+                }else if(tokentype is LexerType.Token_RParen) // )
                 {
                     if (inParen)
                     {

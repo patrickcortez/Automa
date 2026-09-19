@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using static Automa.Source.Utility.Utils;
 
@@ -24,8 +25,20 @@ namespace Automa.Source.Core
             },
             {
                 "run", (string[] args) => { // Run script;
-                    string flag = (args.Length > 1)? args[1] : ""; 
-                    Engine engine = new(args[0],(flag=="-d")? true : false); 
+                    string file = args[0];
+                    string flag = (args.Length > 1)? args[1] : "";
+
+                    if (!Path.Exists(file)) // check file existence
+                    {
+                        throw new FileNotFoundException($"{file} does not exist!");
+                    }
+
+                    if (Path.GetExtension(file)!=".auto")
+                    {
+                        throw new Exception($"{file} is not an auto file. The file must have a '.auto' file extension!");
+                    }
+
+                    Engine engine = new(file,(flag=="-d")? true : false); // run script with debug checking
                     return engine.Start(); 
                 }
             },

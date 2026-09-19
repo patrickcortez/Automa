@@ -2,6 +2,13 @@
 using System.Collections.Generic;
 using System.Text;
 
+// Automa Arithmetic Handler
+// Addition and divisiion (for now)
+
+// TODO:
+// Implement Brace Depth Handling. (Recursive Descent)
+// Implement Multiplication and Division
+
 namespace Automa.Source.Core
 {
     internal class Arithmetic(IEnumerable<LexerToken> Tokens)

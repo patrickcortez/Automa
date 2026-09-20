@@ -147,7 +147,7 @@ namespace Automa.Source.Core
                                 }
 
 
-                                Variables = arith.UpdateScope(Variables).ToList();
+                                arith.UpdateScope(Variables);
                                 break;
                             }
 
@@ -155,7 +155,7 @@ namespace Automa.Source.Core
                         case IfBlock block:
                             prevSucc = false;
 
-                            Hold = Variables;
+                            Hold = Variables.ToList();
                             block.Variable = Variables;
 
                             if (isdebug)
@@ -174,7 +174,6 @@ namespace Automa.Source.Core
                                     
                                     block.ExecuteBlock();
                                     prevSucc = true;
-                                    Variables = block.Variable.Intersect(Variables).ToList();
 
                                     Compare(Variables);
                                 }
@@ -188,7 +187,6 @@ namespace Automa.Source.Core
                                     //Console.WriteLine("Debug: Block is Executing");
                                     block.ExecuteBlock();
                                     prevSucc = true;
-                                    Variables = block.Variable.Intersect(Variables).ToList();
 
                                     Compare(Variables);
                                 }
@@ -202,7 +200,7 @@ namespace Automa.Source.Core
                                 break;
                             }
 
-                            Hold = Variables;
+                            Hold = Variables.ToList();
                             elif.Variable = Variables; // update global var just incase
 
                             if (isdebug)
@@ -216,8 +214,6 @@ namespace Automa.Source.Core
                                 if (EQ.Evaluate())
                                 {
                                     elif.ExecuteBlock();
-                                    Variables = elif.Variable.Intersect(Variables).ToList();
-
                                     Compare(Variables);
 
                                     prevSucc = true;
@@ -228,8 +224,6 @@ namespace Automa.Source.Core
                                 if (NEQ.Evaluate())
                                 {
                                     elif.ExecuteBlock();
-                                    Variables = elif.Variable.Intersect(Variables).ToList();
-
                                     Compare(Variables);
 
                                     prevSucc = true;
@@ -246,7 +240,7 @@ namespace Automa.Source.Core
                                 break;
                             }
 
-                            Hold = Variables;
+                            Hold = Variables.ToList();
                             els.Variable = Variables;
 
                             if (isdebug)
@@ -255,8 +249,6 @@ namespace Automa.Source.Core
                             }
                             els.ExecuteBlock();
                             prevSucc = !prevSucc;
-                            Variables = els.Variable.Intersect(Variables).ToList();
-
                             Compare(Variables);
 
                             break;

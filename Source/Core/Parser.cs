@@ -188,7 +188,7 @@ namespace Automa.Source.Core
 
                     
                     // Determine if we're entering an Expression
-                    if((inBlock && PrevTok is LexerType.Token_Identifier ) && CurrentType is LexerType.Token_LParen && !parseExpression && depth is 0)
+                    if((inBlock && PrevTok is LexerType.Token_KeyWord ) && CurrentType is LexerType.Token_LParen && !parseExpression && depth is 0)
                     {
                         parseExpression = true;
                         continue;
@@ -209,6 +209,7 @@ namespace Automa.Source.Core
 
                     if (CurrentType is LexerType.Token_KeyWord) // keyword handling: if,elif,else and etc...
                     {
+                        PrevTok = CurrentType;
                         string keyword = Current.GetContent();
 
                         if(keyword is "If" or "Elif" or "Else")

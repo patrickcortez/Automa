@@ -151,42 +151,27 @@ namespace Automa.Source
      
     internal record ArithmeticAssign(ArithmeticNode node,string target) : AssignType
     {
-        public IEnumerable<Variable> UpdateScope(IEnumerable<Variable> Scope)
+        public void UpdateScope(List<Variable> Scope)
         {
             Variable? Result = Scope.FirstOrDefault(e => e.name == target);
-            List<Variable> scope = Scope.ToList();
-            int index = Scope.ToArray().IndexOf(Result);
 
-                int val = 0;
-
-                switch (node)
-                {
-                    case NumberNode numberNode:
-
-                        val = numberNode.value;
-
-                        break;
-                    case VariableNode varNode:
-
-                        val = varNode.Eval(Scope);
-                        break;
-
-                    case BinaryOpNode binNode:
-                        val = binNode.Eval(Scope);
-                        break;
-                }
-
-            if(Result is null)
+            int val = node switch
             {
-                scope.Add(new Variable(target, val.ToString(),VariableType.Int));
-                return scope;
+                NumberNode n => n.value,
+                VariableNode v => v.Eval(Scope),
+                BinaryOpNode b => b.Eval(Scope),
+                _ => 0
+            };
+
+            if (Result is null)
+            {
+                Scope.Add(new Variable(target, val.ToString(), VariableType.Int));
+                return;
             }
 
-            Result = Result with { value = val.ToString() };
+            Result.value = val.ToString();
+            Result.type = VariableType.Int;
 
-            scope[index] = Result;
-
-            return scope;
         }
     }
 

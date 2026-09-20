@@ -141,10 +141,6 @@ namespace Automa.Source.Core
                         case IfBlock block:
                             prevSucc = false;
 
-                            if (prevSucc)
-                            {
-                                break;
-                            }
                             
                             block.Variable = Variables;
 

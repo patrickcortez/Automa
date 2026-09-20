@@ -1,6 +1,7 @@
 ﻿using Automa.Source.Utility;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Reflection.Metadata;
 using System.Runtime;
 using System.Text;
@@ -666,9 +667,31 @@ namespace Automa.Source.Core
                         string keyword = Current.Content.ToString();
                         prevTok = CT;
 
+                        if (isdebug)
+                        {
+                            Console.WriteLine($"[DEBUG] current keyword: {keyword}");
+                        }
+
                         if(keyword is "If" or "Elif" or "Else") // Conditional
                         {
-                            // Move Keyword handling here
+                            if(inBlock && depth == 1)
+                            {
+                                // nested if else handling
+                            }
+                            else
+                            {
+                                CI = keyword;
+                                CB = CI;
+                                inBlock = true;
+
+                                if (keyword is "Else")
+                                {
+                                    NodeBuilder.AddNode(new Else(new()));
+                                }
+
+                                continue;
+
+                            }
                         }
                         else // Read, Write and Run
                         {

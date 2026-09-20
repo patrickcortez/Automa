@@ -135,6 +135,8 @@ namespace Automa.Source.Core
                 (string value, string type) CurrentContent = ("","");
 
                 List<LexerToken> Toks = LexTok.Skip(StartingIndex).ToList();
+                List<LexerToken> ArithmeticTokens = new();
+                LexerToken? Peek = null;
 
                 if (isdebug)
                 {
@@ -156,6 +158,19 @@ namespace Automa.Source.Core
                         Console.WriteLine("{0}", CurrentType.ToString());
                     }
 
+                    int peekIndex = i + 1;
+
+                    if (peekIndex < Toks.Count)
+                    {
+                        Peek = Toks[i + 1];
+
+                        // Arithmetic toggler
+                        if ((Peek.Value.TokenType is LexerType.Token_Add or LexerType.Token_Minus or LexerType.Token_Multiply or LexerType.Token_Divide && CurrentType is LexerType.TokenInt or LexerType.Token_Identifier && isAssign && !isArith) || (Peek.Value.TokenType is LexerType.TokenInt or LexerType.Token_Identifier && CurrentType is LexerType.Token_LParen && isAssign && !isArith)) // 2 + or -
+                        {
+                            isArith = true;
+                        }
+                    }
+
                     // Expression Handling
                     if (parseExpression && CurrentType is not LexerType.Token_RParen && depth is 0)
                     {
@@ -169,6 +184,8 @@ namespace Automa.Source.Core
                         continue;
                     }
 
+
+
                     
                     // Determine if we're entering an Expression
                     if((inBlock && PrevTok is LexerType.Token_Identifier ) && CurrentType is LexerType.Token_LParen && !parseExpression && depth is 0)
@@ -177,7 +194,20 @@ namespace Automa.Source.Core
                         continue;
                     }
 
-                    if(CurrentType is LexerType.Token_KeyWord) // keyword handling: if,elif,else and etc...
+                    if (isArith) // Arithmetic Assignment Handler
+                    {
+                        if (isAssign)
+                        {
+                            if (CurrentType is LexerType.TokenInt or LexerType.Token_Add or LexerType.Token_LParen or LexerType.Token_RParen or LexerType.Token_Minus or LexerType.Token_Multiply or LexerType.Token_Divide or LexerType.Token_Identifier)
+                            {
+                                ArithmeticTokens.Add(Current);
+                                continue;
+                            }
+                        }
+                    }
+
+
+                    if (CurrentType is LexerType.Token_KeyWord) // keyword handling: if,elif,else and etc...
                     {
                         string keyword = Current.GetContent();
 
@@ -192,9 +222,20 @@ namespace Automa.Source.Core
                             }
                             else
                             {
+
+                                if (isdebug)
+                                {
+                                    Console.WriteLine($"[DEBUG] Parsing Nested Block: {keyword}");
+                                }
+
                                 if(keyword is "If")
                                 {
                                     Block? parsedBlock = ParseStatement<IfBlock>(Current, out int skip);
+
+                                    if (isdebug)
+                                    {
+                                        Console.WriteLine($"[DEBUG] with block instruction count: {skip}");
+                                    }
 
                                     if (parsedBlock is null)
                                     {
@@ -208,13 +249,21 @@ namespace Automa.Source.Core
                                 {
                                     Block? parsedBlock = ParseStatement<Elif>(Current, out int skip);
 
+                                    if (isdebug)
+                                    {
+                                        Console.WriteLine($"[DEBUG] with block instruction count: {skip}");
+                                    }
+
                                     if (parsedBlock is null)
                                     {
                                         throw new Exception($"Malformed block at line: {Current.Line}");
                                     }
 
                                     Bob.AddNode(parsedBlock);
-                                }else if(keyword is "Else")
+
+                                    if (skip > 0) i += (skip - 1);
+                                }
+                                else if(keyword is "Else")
                                 {
                                     Block? parsedBlock = ParseStatement<Else>(Current, out int skip);
 
@@ -224,6 +273,8 @@ namespace Automa.Source.Core
                                     }
 
                                     Bob.AddNode(parsedBlock);
+
+                                    if (skip > 0) i += (skip - 1);
                                 }
 
                                 continue;
@@ -472,8 +523,24 @@ namespace Automa.Source.Core
                                 _type = VariableType.Identifier;
                             }
 
-                            Bob.AddNode(new AssignInstruction(new VariableAssign(new(varname, CurrentContent.value, _type))));
+                            if (isArith)
+                            {
+                                Arithmetic arith = new(ArithmeticTokens, isdebug);
+
+                                Bob.AddNode(new AssignInstruction(new ArithmeticAssign(arith.ParseArithmetic(out int _),varname)));
+                            }
+                            else
+                            {
+                                Bob.AddNode(new AssignInstruction(new VariableAssign(new(varname, CurrentContent.value, _type))));
+                            }
+
+
                             // reset
+                            if(ArithmeticTokens.Count > 0)
+                            {
+                                ArithmeticTokens.Clear();
+                            }
+
                             CurrentContent = ("", "");
                             CurrentInstruction = "";
                             isAssign = false;
@@ -670,18 +737,42 @@ namespace Automa.Source.Core
                         {
                             if (inBlock && depth == 1)
                             {
+
+                                if (isdebug)
+                                {
+                                    Console.WriteLine($"[DEBUG] Parsing Nested {keyword}");
+                                }
+
                                 if (keyword is "If")
                                 {
                                     NodeBuilder.AddNode(ParseStatement<IfBlock>(Current, out int tokenConsumed), true);
+
+                                    if (isdebug)
+                                    {
+                                        Console.WriteLine($"[DEBUG] With {tokenConsumed} instructions");
+                                    }
+
                                     if (tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
                                 }
                                 else if (keyword is "Elif")
                                 {
                                     NodeBuilder.AddNode(ParseStatement<Elif>(Current, out int tokenConsumed), true);
+
+                                    if (isdebug)
+                                    {
+                                        Console.WriteLine($"[DEBUG] With {tokenConsumed} instructions");
+                                    }
+
                                     if (tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
                                 } else if (keyword is "Else")
                                 {
                                     NodeBuilder.AddNode(ParseStatement<Else>(Current, out int tokenConsumed), true);
+
+                                    if (isdebug)
+                                    {
+                                        Console.WriteLine($"[DEBUG] With {tokenConsumed} instructions");
+                                    }
+
                                     if (tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
                                 }
                             }

@@ -16,6 +16,20 @@ namespace Automa.Source.Core
                 }
 
                 bool prevSucc = false;
+                List<Variable>? Hold = null;
+
+                void Compare(List<Variable> NewList)
+                {
+                    int original = Hold.Count;
+                    int mutated = NewList.Count;
+
+                    int diff = mutated - original;
+
+                    NewList.RemoveRange(original, diff);
+                    Hold.Clear();
+                }
+
+
                 
                 while(Current != null)
                 {
@@ -141,7 +155,7 @@ namespace Automa.Source.Core
                         case IfBlock block:
                             prevSucc = false;
 
-                            
+                            Hold = Variables;
                             block.Variable = Variables;
 
                             if (isdebug)
@@ -161,6 +175,8 @@ namespace Automa.Source.Core
                                     block.ExecuteBlock();
                                     prevSucc = true;
                                     Variables = block.Variable.Intersect(Variables).ToList();
+
+                                    Compare(Variables);
                                 }
 
                             }else if(block.expression is NotEqualTo neq)
@@ -173,6 +189,8 @@ namespace Automa.Source.Core
                                     block.ExecuteBlock();
                                     prevSucc = true;
                                     Variables = block.Variable.Intersect(Variables).ToList();
+
+                                    Compare(Variables);
                                 }
                             }
 
@@ -184,6 +202,7 @@ namespace Automa.Source.Core
                                 break;
                             }
 
+                            Hold = Variables;
                             elif.Variable = Variables; // update global var just incase
 
                             if (isdebug)
@@ -198,6 +217,9 @@ namespace Automa.Source.Core
                                 {
                                     elif.ExecuteBlock();
                                     Variables = elif.Variable.Intersect(Variables).ToList();
+
+                                    Compare(Variables);
+
                                     prevSucc = true;
                                 }
                             }else if(elif.expression is NotEqualTo NEQ)
@@ -207,6 +229,9 @@ namespace Automa.Source.Core
                                 {
                                     elif.ExecuteBlock();
                                     Variables = elif.Variable.Intersect(Variables).ToList();
+
+                                    Compare(Variables);
+
                                     prevSucc = true;
                                 }
                             }
@@ -221,6 +246,7 @@ namespace Automa.Source.Core
                                 break;
                             }
 
+                            Hold = Variables;
                             els.Variable = Variables;
 
                             if (isdebug)
@@ -230,6 +256,9 @@ namespace Automa.Source.Core
                             els.ExecuteBlock();
                             prevSucc = !prevSucc;
                             Variables = els.Variable.Intersect(Variables).ToList();
+
+                            Compare(Variables);
+
                             break;
 
                         default:

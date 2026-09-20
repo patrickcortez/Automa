@@ -653,7 +653,7 @@ namespace Automa.Source.Core
                     }
 
 
-                    if((inBlock && prevTok is LexerType.Token_Identifier) && CT is LexerType.Token_LParen && !parseExpression && depth is 0) // Expression Parsing
+                    if((inBlock && prevTok is LexerType.Token_KeyWord) && CT is LexerType.Token_LParen && !parseExpression && depth is 0) // Expression Parsing
                     {
                         parseExpression = true;
                         continue;

@@ -178,7 +178,7 @@ namespace Automa.Source
 
             if(Result is null)
             {
-                scope.Add(new Variable(target, val.ToString()));
+                scope.Add(new Variable(target, val.ToString(),VariableType.Int));
                 return scope;
             }
 

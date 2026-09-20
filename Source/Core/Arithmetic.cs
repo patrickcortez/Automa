@@ -62,13 +62,13 @@ namespace Automa.Source.Core
                 {
                     int val = int.Parse(content);
 
-                    if(left is null)
+                    if (left is null)
                     {
                         Push(new NumberNode(val));
                     }
                     else
                     {
-                        if(next is not null) // parse the next operations
+                        if (next is not null) // parse the next operations
                         {
                             int skip = i + 1;
                             Push(ParseArithmetic(out int tskips, tokens.Skip(skip)));
@@ -81,10 +81,10 @@ namespace Automa.Source.Core
 
 
                     continue;
-                }else if(tokentype is LexerType.Token_Add or LexerType.Token_Minus) // +,-,* or /
+                } else if (tokentype is LexerType.Token_Add or LexerType.Token_Minus) // +,-,* or /
                 {
 
-                    if(left is null)
+                    if (left is null)
                     {
                         throw new Exception("Cannot start the arithmetic expression with a operator!");
                     }
@@ -93,25 +93,25 @@ namespace Automa.Source.Core
                     {
                         pendingop = '-';
                     }
-                    else if(tokentype is LexerType.Token_Multiply)
+                    else if (tokentype is LexerType.Token_Multiply)
                     {
 
                         pendingop = '*';
                     }
-                    else if(tokentype is LexerType.Token_Divide)
+                    else if (tokentype is LexerType.Token_Divide)
                     {
                         pendingop = '/';
                     }
-                    else if(tokentype is LexerType.Token_Add)
+                    else if (tokentype is LexerType.Token_Add)
                     {
                         pendingop = '+';
                     }
 
                     continue;
-                }else if(tokentype is LexerType.Token_LParen) // (
+                } else if (tokentype is LexerType.Token_LParen) // (
                 {
 
-                    if (!inParen && pd ==0)
+                    if (!inParen && pd == 0)
                     {
                         inParen = true;
                     }
@@ -121,17 +121,15 @@ namespace Automa.Source.Core
                     i += tskip;
 
                     continue;
-                }else if(tokentype is LexerType.Token_RParen) // )
+                } else if (tokentype is LexerType.Token_RParen) // )
                 {
                     if (inParen)
                     {
                         inParen = false;
-                        break;
                     }
-                    else
-                    {
-                        throw new InvalidOperationException("Missing L brace!");
-                    }
+
+                    break;
+
                 }else if(tokentype is LexerType.Token_Identifier) // variable handling (scope based)
                 {
 

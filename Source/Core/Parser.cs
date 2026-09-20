@@ -581,6 +581,11 @@ namespace Automa.Source.Core
                 {
                     isArith = false;
                     ArithmeticTokens.Clear();
+
+                    CI = string.Empty;
+                    CC = ("", "");
+                    validParen = false;
+                    isAssign = false;
                 }
 
                 for (int i = 0; i < _Tokens.Length;i++)
@@ -594,7 +599,7 @@ namespace Automa.Source.Core
                         Peek = _Tokens[i + 1];
 
                         // Arithmetic toggler
-                        if((Peek.Value.TokenType is LexerType.Token_Add or LexerType.Token_Minus && CT is LexerType.TokenInt && isAssign && !isArith) || (Peek.Value.TokenType is LexerType.TokenInt && CT is LexerType.Token_LParen && isAssign && !isArith)) // 2 + or -
+                        if((Peek.Value.TokenType is LexerType.Token_Add or LexerType.Token_Minus or LexerType.Token_Multiply or LexerType.Token_Divide && CT is LexerType.TokenInt or LexerType.Token_Identifier && isAssign && !isArith) || (Peek.Value.TokenType is LexerType.TokenInt or LexerType.Token_Identifier && CT is LexerType.Token_LParen && isAssign && !isArith)) // 2 + or -
                         {
                             isArith = true;
                         }
@@ -638,7 +643,7 @@ namespace Automa.Source.Core
                     {
                         if (isAssign)
                         {
-                            if(CT is LexerType.TokenInt or LexerType.Token_Add or LexerType.Token_LParen or LexerType.Token_RParen or LexerType.Token_Minus or LexerType.Token_Multiply or LexerType.Token_Divide)
+                            if(CT is LexerType.TokenInt or LexerType.Token_Add or LexerType.Token_LParen or LexerType.Token_RParen or LexerType.Token_Minus or LexerType.Token_Multiply or LexerType.Token_Divide or LexerType.Token_Identifier)
                             {
                                 ArithmeticTokens.Add(Current);
                                 continue;

@@ -27,12 +27,12 @@ namespace Automa.Source.Utility
                 if (config.newline)
                 {
                     Console.Error.WriteLine("{0}\n---\n{1}", Title, (newContent != String.Empty) ? newContent : Content);
-                    Console.ForegroundColor = default;
+                    Console.ForegroundColor = ConsoleColor.White;
                     return;
                 }
 
                 Console.Error.WriteLine("{0}\n---\n{1}", Title, (newContent != String.Empty) ? newContent : Content);
-                Console.ForegroundColor = default;
+                Console.ForegroundColor = ConsoleColor.White;
                 return;
             } else if (config is not null && config.option == PrintOptions.Warning)
             {
@@ -41,12 +41,12 @@ namespace Automa.Source.Utility
                 if (config.newline)
                 {
                     Console.Error.WriteLine("{0}\n---\n{1}", Title, (newContent != String.Empty) ? newContent : Content);
-                    Console.ForegroundColor = default;
+                    Console.ForegroundColor = ConsoleColor.White;
                     return;
                 }
 
                 Console.Error.WriteLine("{0}\n---\n{1}", Title, (newContent != String.Empty) ? newContent : Content);
-                Console.ForegroundColor = default;
+                Console.ForegroundColor = ConsoleColor.White;
                 return;
 
             } else if (config is null || config.option == PrintOptions.Normal)
@@ -55,12 +55,12 @@ namespace Automa.Source.Utility
                 if (config is null || config.newline)
                 {
                     Console.Error.WriteLine("{0}\n---\n{1}", Title, (newContent != String.Empty) ? newContent : Content);
-                    Console.ForegroundColor = default;
+                    Console.ForegroundColor = ConsoleColor.White;
                     return;
                 }
 
                 Console.Error.WriteLine("{0}\n---\n{1}", Title, (newContent != String.Empty) ? newContent : Content);
-                Console.ForegroundColor = default;
+                Console.ForegroundColor = ConsoleColor.White;
                 return;
             }
         }
@@ -75,12 +75,12 @@ namespace Automa.Source.Utility
                 if (config.newline)
                 {
                     Console.Error.WriteLine(Content);
-                    Console.ForegroundColor = default;
+                    Console.ForegroundColor = ConsoleColor.White;
                     return;
                 }
 
                 Console.Error.WriteLine(Content);
-                Console.ForegroundColor = default;
+                Console.ForegroundColor = ConsoleColor.White;
                 return;
             }
             else if (config is not null && config.option == PrintOptions.Warning)
@@ -90,12 +90,12 @@ namespace Automa.Source.Utility
                 if (config.newline)
                 {
                     Console.Error.WriteLine(Content);
-                    Console.ForegroundColor = default;
+                    Console.ForegroundColor = ConsoleColor.White;
                     return;
                 }
 
                 Console.Error.WriteLine(Content);
-                Console.ForegroundColor = default;
+                Console.ForegroundColor = ConsoleColor.White;
                 return;
 
             }
@@ -105,12 +105,12 @@ namespace Automa.Source.Utility
                 if (config is null || config.newline)
                 {
                     Console.Error.WriteLine(Content);
-                    Console.ForegroundColor = default;
+                    Console.ForegroundColor = ConsoleColor.White;
                     return;
                 }
 
                 Console.Error.WriteLine(Content);
-                Console.ForegroundColor = default;
+                Console.ForegroundColor = ConsoleColor.White;
                 return;
             }
         }

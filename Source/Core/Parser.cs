@@ -177,6 +177,79 @@ namespace Automa.Source.Core
                         continue;
                     }
 
+                    if(CurrentType is LexerType.Token_KeyWord) // keyword handling: if,elif,else and etc...
+                    {
+                        string keyword = Current.GetContent();
+
+                        if(keyword is "If" or "Elif" or "Else")
+                        {
+
+                            if (!inBlock)
+                            {
+                                CurrentBlock = keyword;
+                                inBlock = true;
+                                continue;
+                            }
+                            else
+                            {
+                                if(keyword is "If")
+                                {
+                                    Block? parsedBlock = ParseStatement<IfBlock>(Current, out int skip);
+
+                                    if (parsedBlock is null)
+                                    {
+                                        throw new Exception($"Malformed block at line: {Current.Line}");
+                                    }
+
+                                    Bob.AddNode(parsedBlock);
+
+                                    if (skip > 0) i += (skip - 1);
+                                }else if(keyword is "Elif")
+                                {
+                                    Block? parsedBlock = ParseStatement<Elif>(Current, out int skip);
+
+                                    if (parsedBlock is null)
+                                    {
+                                        throw new Exception($"Malformed block at line: {Current.Line}");
+                                    }
+
+                                    Bob.AddNode(parsedBlock);
+                                }else if(keyword is "Else")
+                                {
+                                    Block? parsedBlock = ParseStatement<Else>(Current, out int skip);
+
+                                    if (parsedBlock is null)
+                                    {
+                                        throw new Exception($"Malformed block at line: {Current.Line}");
+                                    }
+
+                                    Bob.AddNode(parsedBlock);
+                                }
+
+                                continue;
+                            }
+
+                        }
+
+                        if (isAssign || inParen)
+                        {
+                            if(keyword is "Read" or "Run")
+                            {
+                                CurrentContent.type = keyword;
+                                continue;
+                            }else if(keyword is "Write")
+                            {
+                                throw new Exception($"Cannot use write as an assign type! at {Current.Line}");
+                            }
+                            continue;
+                        }else if (!isAssign)
+                        {
+                            CurrentInstruction = keyword;
+                            continue;
+                        }
+
+                    }
+
                     if (CurrentType is LexerType.Token_Identifier) // Instructions or variable decl
                     {
                         if (depth > 1)
@@ -191,93 +264,14 @@ namespace Automa.Source.Core
                             throw new Exception($"Cannot assign inside parenthesis, at line: {Current.Line}");
                         }
 
-                        // If-else control flow.
-                        if (content is "If" or "Elif" or "Else")
+
+                        if (isAssign || inParen) // if identifier is on right side or on a parenthesis
                         {
-                            if (!inBlock)
-                            {
-                                    CurrentBlock = content;
-                                    inBlock = true;
-                                    continue;
-                            }
-                            else
-                            {
-                                    if (CurrentBlock is "If")
-                                    {
-                                        Block? parsedBlock = ParseStatement<IfBlock>(Current, out int skip);
-
-                                        if (parsedBlock is null)
-                                        {
-                                            throw new Exception($"Malformed block at line: {Current.Line}");
-                                        }
-
-                                        Bob.AddNode(parsedBlock);
-
-
-                                        if (skip > 0) i += (skip - 1);
-                                    }
-                                    else if (CurrentBlock is "Elif")
-                                    {
-                                        Block? parsedBlock = ParseStatement<Elif>(Current, out int skip);
-
-                                        if (parsedBlock is null)
-                                        {
-                                            throw new Exception($"Malformed block at line: {Current.Line}");
-                                        }
-
-                                        Bob.AddNode(parsedBlock);
-                                        if (skip > 0) i += (skip - 1);
-                                    }
-                                    else if (CurrentBlock is "Else")
-                                    {
-                                        Block? parsedBlock = ParseStatement<Else>(Current, out int skip);
-
-                                        if (parsedBlock is null)
-                                        {
-                                            throw new Exception($"Malformed block at line: {Current.Line}");
-                                        }
-
-                                        Bob.AddNode(parsedBlock);
-                                        if (skip > 0) i += (skip - 1);
-                                    }
-                                continue;
-                            }
-
-                        }
-
-                        if (isAssign || inParen) 
-                        {
-                            if (isAssign && Keywords.Contains(content)) // Assignment Type 
-                            {
-                                if(content is "Read" or "Run")
-                                {
-                                    if (inParen && CurrentContent.type is "Run" or "Read")
-                                    {
-                                        throw new Exception("KeyWords inside Assignment types");
-                                    }
-
-                                    CurrentContent.type = content;
-                                    continue;
-                                }
-                            }
-                            else if(!isAssign && Keywords.Contains(content)) // Read and Run instruction without assignment
-                            {
-                                if(content is "Read" or "Run")
-                                {
-                                    if (inParen && CurrentContent.type is "Run" or "Read")
-                                    {
-                                        throw new Exception("KeyWords inside Instruction types");
-                                    }
-                                    CurrentInstruction = content;
-                                    continue;
-                                }
-
-                            }
-                            // variable call
+                            
                             CurrentContent = (content, "identifier");
                             continue;
                         }
-                        else
+                        else // left side, possible variable decl
                         {
                             CurrentInstruction = content;
                             continue;
@@ -652,8 +646,8 @@ namespace Automa.Source.Core
                         }
                     }
 
-
-                    if((inBlock && prevTok is LexerType.Token_KeyWord) && CT is LexerType.Token_LParen && !parseExpression && depth is 0) // Expression Parsing
+                    // Expression Parsing toggler
+                    if((inBlock && prevTok is LexerType.Token_KeyWord) && CT is LexerType.Token_LParen && !parseExpression && depth is 0) 
                     {
                         parseExpression = true;
                         continue;
@@ -661,8 +655,8 @@ namespace Automa.Source.Core
 
                     // Check Tokens
 
-                    // TODO: will implement later =P, DO NOT TOUCH yet
-                    if(CT is LexerType.Token_KeyWord && depth is 0) // Handle keywords
+                    // Handle keywords: if,elif,else and etc...
+                    if(CT is LexerType.Token_KeyWord && depth is 0) 
                     {
                         string keyword = Current.Content.ToString();
                         prevTok = CT;
@@ -672,11 +666,24 @@ namespace Automa.Source.Core
                             Console.WriteLine($"[DEBUG] current keyword: {keyword}");
                         }
 
-                        if(keyword is "If" or "Elif" or "Else") // Conditional
+                        if (keyword is "If" or "Elif" or "Else") // Conditional
                         {
-                            if(inBlock && depth == 1)
+                            if (inBlock && depth == 1)
                             {
-                                // nested if else handling
+                                if (keyword is "If")
+                                {
+                                    NodeBuilder.AddNode(ParseStatement<IfBlock>(Current, out int tokenConsumed), true);
+                                    if (tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
+                                }
+                                else if (keyword is "Elif")
+                                {
+                                    NodeBuilder.AddNode(ParseStatement<Elif>(Current, out int tokenConsumed), true);
+                                    if (tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
+                                } else if (keyword is "Else")
+                                {
+                                    NodeBuilder.AddNode(ParseStatement<Else>(Current, out int tokenConsumed), true);
+                                    if (tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
+                                }
                             }
                             else
                             {
@@ -695,14 +702,33 @@ namespace Automa.Source.Core
                         }
                         else // Read, Write and Run
                         {
-                            // Also here
+
+                            if (isAssign || inParen)
+                            {
+                                if (keyword is "Run" or "Read")
+                                {
+                                    CC.type = keyword;
+                                    continue;
+                                }else if(keyword is "Write")
+                                {
+                                    throw new Exception($"Cannot assign instruction 'WRITE' at {Current.Line}");
+                                }
+
+
+                            } 
+                            else if (!isAssign)
+                            {
+                                CI = keyword;
+                                continue;
+
+                            }
                         }
 
                         continue;
                     }
 
                     // Identifier handling
-                    if (CT is LexerType.Token_Identifier) // Handle Variables
+                    if (CT is LexerType.Token_Identifier) // Handle Variable identifiers
                     {
                         prevTok = CT;
 
@@ -713,83 +739,21 @@ namespace Automa.Source.Core
 
                         string ident = Current.GetContent();
 
-                        if (ident is "If" or "Elif" or "Else")
-                        {
-
-                            if (inBlock && depth == 1)
-                            {
-                                if (ident is "If")
-                                {
-                                    NodeBuilder.AddNode(ParseStatement<IfBlock>(Current, out int tokenConsumed), true);
-                                    if (tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
-                                }
-                                else if (ident is "Elif")
-                                {
-                                    NodeBuilder.AddNode(ParseStatement<Elif>(Current, out int tokenConsumed), true);
-                                    if (tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
-                                }
-                                else if (ident is "Else")
-                                {
-                                    NodeBuilder.AddNode(ParseStatement<Else>(Current, out int tokenConsumed), true);
-                                    if (tokenConsumed > 0) i += (tokenConsumed - 1);// Jump to the end of the block
-                                }
-                                continue;
-                            }
-                            else
-                            {
-                                CI = ident;
-                                CB = CI;
-                                inBlock = true;
-
-                                if (ident is "Else")
-                                {
-                                    NodeBuilder.AddNode(new Else(new()));
-                                }
-
-                                continue;
-                            }
-
-
-                        }
-
-
-
-
                         if (isAssign || inParen) // if identifier is in paren or right hand of the assignment ( Right )
                         {
-                            if (Keywords.Contains(ident) && isAssign)
-                            {
-                                if (ident is "Read" or "Run")
-                                {
-                                    CC.type = ident;
-                                    continue;
-                                }
-                            }
-                            else if (!isAssign && Keywords.Contains(ident))
-                            {
-                                if (ident is "Read" or "Run")
-                                {
-                                    CI = ident;
-                                    continue;
-                                }
-                            }
-
                             CC = (ident, "Identifier"); // current Content
                         }
                         else // Left
                         {
                             CI = ident; // Current Instruction
-                            continue;
+
                         }
 
-
+                        continue;
                     }
                     else if (CT is LexerType.Token_LParen) // (
                     {
                         prevTok = CT;
-
-
-
 
                         if (inParen)
                         {

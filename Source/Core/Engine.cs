@@ -25,7 +25,7 @@ namespace Automa.Source.Core
         // Plus,Parenthesis Depth and minus
         // Multiplication and Division is up-to the users to create using upcoming while-loop and functions.
 
-        private string[] keyWords = ["If", "Elif","Else"];
+        private string[] keyWords = ["If", "Elif","Else","Write","Run","Read"];
         private string lastIdent = "";
 
         private LexerToken[]? Tokenize() // Lexer & Tokenizer

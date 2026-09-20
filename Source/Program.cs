@@ -4,6 +4,7 @@ namespace Automa.Source;
 
 // A simple Automation Language made by Tezzz =D
 
+
 public static class Automa
 {
     public static async Task<int> Main(string[] args)

@@ -44,43 +44,51 @@ namespace Automa.Source
 
     //--- for arithmetic parser
 
-    internal abstract record class ArithmeticNode;
+    internal abstract record class ArithmeticNode { public abstract int Eval(IEnumerable<Variable> Scope); }
 
-    internal record class NumberNode(int value) : ArithmeticNode;
+    internal record class NumberNode(int value) : ArithmeticNode
+    {
+        public override int Eval(IEnumerable<Variable>? Scope) => value;
+    }
+
+    internal record class VariableNode(string name) : ArithmeticNode
+    {
+
+
+        public override int Eval(IEnumerable<Variable>? Scope)
+        {
+            if(Scope is null)
+            {
+                throw new Exception("Current Scope not Set!");
+            }
+
+            Variable? result = Scope.FirstOrDefault(ex => ex.name == name);
+
+            if(result == null)
+            {
+                throw new ArgumentNullException($"Variable {name} doesn't exist!");
+            }
+
+            if(result.type != VariableType.Int)
+            {
+                throw new Exception($"Variable {name} is not an integer!");
+            }
+
+            return int.Parse(result.value);
+        }
+    }
 
     internal record class BinaryOpNode(ArithmeticNode left, char Op, ArithmeticNode right) : ArithmeticNode
     {
-        public int ExecuteOperation()
+
+        public override int Eval(IEnumerable<Variable> Scope) => Op switch
         {
-
-            if(left is NumberNode number && right is NumberNode number2)
-            {
-                if(Op is '+')
-                {
-                    return number.value + number2.value;
-                }else if(Op is '-')
-                {
-                    return number.value - number2.value;
-                }
-            }
-            else
-            {
-                if(left is BinaryOpNode OpLeft)
-                {
-                    NumberNode rn = (NumberNode)right;
-                    return (Op is '+') ? OpLeft.ExecuteOperation() + rn.value : OpLeft.ExecuteOperation() - rn.value;
-
-                }
-                else if(right is BinaryOpNode OpRight)
-                {
-                    NumberNode ln = (NumberNode)left;
-                    return (Op is '+') ? ln.value + OpRight.ExecuteOperation() : ln.value - OpRight.ExecuteOperation();
-                    
-                }
-            }
-
-            return 0;
-        }
+            '+' => left.Eval(Scope) + right.Eval(Scope),
+            '-' => left.Eval(Scope) - right.Eval(Scope),
+            '*' => left.Eval(Scope) * right.Eval(Scope),
+            '/' => left.Eval(Scope) / right.Eval(Scope),
+            _ => throw new InvalidOperationException($"Unknown Operation {Op}")
+        };
     }
 
     //---
@@ -140,14 +148,39 @@ namespace Automa.Source
     internal record ReadAssign(string target,string Prompt) : AssignType;
 
     internal record AssignInstruction(AssignType type) : Instruction;
-
-    internal record ArithemticAssign(Instruction node) : AssignType
+     
+    internal record ArithmeticAssign(ArithmeticNode node,string target) : AssignType
     {
-        public int ExecuteExpression()
+        public void Eval(IEnumerable<Variable> Scope)
         {
-            // Put Arithmetic handler here...
+            Variable? Result = Scope.FirstOrDefault(e => e.name == target);
 
-            return 0;
+                int val = 0;
+
+                switch (node)
+                {
+                    case NumberNode numberNode:
+
+                        val = numberNode.value;
+
+                        break;
+                    case VariableNode varNode:
+
+                        val = varNode.Eval(Scope);
+                        break;
+
+                    case BinaryOpNode binNode:
+                        val = binNode.Eval(Scope);
+                        break;
+                }
+
+            if(Result is null)
+            {
+                Scope.ToList().Add(new Variable(target, val.ToString()));
+                return;
+            }
+
+            Result = Result with { value = val.ToString() };
         }
     }
 
@@ -156,7 +189,7 @@ namespace Automa.Source
        public string name { get; set; } = _name;
        public string value { get; set; } = _value;
 
-        public VariableType type = _type;
+       public VariableType type = _type;
     }
 
     internal abstract record Block : Instruction

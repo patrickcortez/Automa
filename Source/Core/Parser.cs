@@ -127,6 +127,8 @@ namespace Automa.Source.Core
                         isAssign = false;
                 int depth = 0, pdepth = 0; // brace depth and parenthesis depth
 
+                bool isArith = false;
+
                 string CurrentInstruction = "",
                         CurrentBlock = "";
                 (string value, string type) CurrentContent = ("","");
@@ -575,6 +577,12 @@ namespace Automa.Source.Core
                     Console.WriteLine("[Debug] TopLevel Statement (Total Tokens: {0}):",_Tokens.Length);
                 }
 
+                void ArithReset()
+                {
+                    isArith = false;
+                    ArithmeticTokens.Clear();
+                }
+
                 for (int i = 0; i < _Tokens.Length;i++)
                 {
                     LexerToken Current = _Tokens[i];
@@ -586,7 +594,7 @@ namespace Automa.Source.Core
                         Peek = _Tokens[i + 1];
 
                         // Arithmetic toggler
-                        if(Peek.Value.TokenType is LexerType.Token_Add or LexerType.Token_Minus && CT is LexerType.TokenInt && isAssign && !isArith)
+                        if((Peek.Value.TokenType is LexerType.Token_Add or LexerType.Token_Minus && CT is LexerType.TokenInt && isAssign && !isArith) || (Peek.Value.TokenType is LexerType.TokenInt && CT is LexerType.Token_LParen && isAssign && !isArith)) // 2 + or -
                         {
                             isArith = true;
                         }
@@ -626,6 +634,18 @@ namespace Automa.Source.Core
                         continue;
                     }
 
+                    if(isArith) // Arithmetic Assignment Handler
+                    {
+                        if (isAssign)
+                        {
+                            if(CT is LexerType.TokenInt or LexerType.Token_Add or LexerType.Token_LParen or LexerType.Token_RParen or LexerType.Token_Minus or LexerType.Token_Multiply or LexerType.Token_Divide)
+                            {
+                                ArithmeticTokens.Add(Current);
+                                continue;
+                            }
+                        }
+                    }
+
 
                     if((inBlock && prevTok is LexerType.Token_Identifier) && CT is LexerType.Token_LParen && !parseExpression && depth is 0) // Expression Parsing
                     {
@@ -635,6 +655,7 @@ namespace Automa.Source.Core
 
                     // Check Tokens
 
+                    // TODO: will implement later =P, DO NOT TOUCH yet
                     if(CT is LexerType.Token_KeyWord && depth is 0) // Handle keywords
                     {
                         string keyword = Current.Content.ToString();
@@ -643,10 +664,12 @@ namespace Automa.Source.Core
                         {
                             // Move Keyword handling here
                         }
-                        else
+                        else // Read, Write and Run
                         {
-
+                            // Also here
                         }
+
+                        continue;
                     }
 
                     // Identifier handling
@@ -660,8 +683,6 @@ namespace Automa.Source.Core
                         }
 
                         string ident = Current.GetContent();
-
-
 
                         if (ident is "If" or "Elif" or "Else")
                         {
@@ -760,10 +781,6 @@ namespace Automa.Source.Core
 
                         inParen = true;
 
-                        if (isAssign)
-                        {
-                            ArithmeticTokens.Add(Current); // Add just incase it is arithmetic: (( or (2+0)
-                        }
 
                         continue;
                     }
@@ -775,12 +792,6 @@ namespace Automa.Source.Core
                         if (pdepth > 0)
                         {
                             pdepth--;
-                            continue;
-                        }
-
-                        if (isArith)
-                        {
-                            ArithmeticTokens.Add(Current);
                             continue;
                         }
 
@@ -987,13 +998,25 @@ namespace Automa.Source.Core
                                 }
                             }
 
-                            if (isArith)
+                            if (isArith && !inBlock)
                             {
+                                Arithmetic arith = new(ArithmeticTokens);
 
-                                // handle arithmetic
+                                NodeBuilder.AddNode(new AssignInstruction(new ArithmeticAssign(arith.ParseArithmetic(out int _, _Tokens),varname)));
 
-                                isArith = false;
+                                ArithReset();
                                 continue;
+                            }
+
+                            if(isArith && inBlock)
+                            {
+                                Arithmetic arith = new(ArithmeticTokens);
+
+                                NodeBuilder.AddNode(new AssignInstruction(new ArithmeticAssign(arith.ParseArithmetic(out int _, _Tokens), varname)), true);
+
+                                ArithReset();
+                                continue;
+
                             }
 
                             if (inBlock && depth is 1)
@@ -1036,11 +1059,6 @@ namespace Automa.Source.Core
 
                         if (CT is LexerType.TokenInt)
                         {
-                            if (isArith)
-                            {
-                                ArithmeticTokens.Add(Current);
-                                continue;
-                            }
 
                             CC = (Current.GetContent(), "int");
                             continue;
@@ -1084,7 +1102,6 @@ namespace Automa.Source.Core
                             continue;
                         }
 
-
                         continue;
                     }
                     else if (CT is LexerType.Token_RBrace) // }
@@ -1117,20 +1134,20 @@ namespace Automa.Source.Core
                     else if(CT is LexerType.Token_Add) // +
                     {
                         prevTok = CT;
-                        if (isArith)
-                        {
-                            ArithmeticTokens.Add(Current);
-                        }
                         continue;
                     }else if(CT is LexerType.Token_Minus) // -
                     {
                         prevTok = CT;
 
-                        if (isArith)
-                        {
-                            ArithmeticTokens.Add(Current);
-                        }
+                        continue;
+                    }else if(CT is LexerType.Token_Multiply) // *
+                    {
+                        prevTok = CT;
 
+                        continue;
+                    }else if(CT is LexerType.Token_Divide) // /
+                    {
+                        prevTok = CT;
                         continue;
                     }
                    

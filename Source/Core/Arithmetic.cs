@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Automa.Source;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -14,43 +15,84 @@ namespace Automa.Source.Core
     internal class Arithmetic(IEnumerable<LexerToken> Tokens)
     {
 
-        public ArithmeticNode? ParseArithmetic(IEnumerable<Variable>? Variables = null)
+        public ArithmeticNode? ParseArithmetic(out int TokensConsumed,IEnumerable<LexerToken>? Starting = null)
         {
-            BinaryOpNode? Start = null;
+            ArithmeticNode? left = null;
+            char pendingop = '+';
 
-            foreach (LexerToken token in Tokens)
+            void Push(ArithmeticNode operand) =>
+                left = left is null ? operand : new BinaryOpNode(left, pendingop, operand);
+
+            bool inParen = false;
+            int pd = 0;
+
+            LexerToken[] tokens = Starting.ToArray() ?? Tokens.ToArray();
+
+            int tc = 0;
+
+            for(int i = 0; i < tokens.Count(); i++)
             {
+                LexerToken token = tokens[i];
+                LexerToken? next = null;
                 LexerType tokentype = token.TokenType;
                 string content = token.GetContent();
-                bool inParen = false;
-                int pd = 0;
+
+                int Peek = i + 1;
+                tc++;
+
+                if(Peek < tokens.Count())
+                {
+                    next = tokens[Peek];
+                }
+
 
                 if(tokentype is LexerType.TokenInt) //123
                 {
                     int val = int.Parse(content);
-                    if(Start is null)
+
+                    if(left is null)
                     {
-                        Start = new BinaryOpNode(new NumberNode(val), '+', new NumberNode(0));
-                        continue;
+                        Push(new NumberNode(val));
                     }
                     else
                     {
-                        Start = Start with { right = new NumberNode(val) };
+                        if(next is not null) // parse the next operations
+                        {
+                            int skip = i + 1;
+                            Push(ParseArithmetic(out int tskips, tokens.Skip(skip)));
+                            i += tskips;
+                            continue;
+                        }
+
+                        Push(new NumberNode(val));
                     }
 
 
                     continue;
-                }else if(tokentype is LexerType.Token_Add or LexerType.Token_Minus) // + or -
+                }else if(tokentype is LexerType.Token_Add or LexerType.Token_Minus) // +,-,* or /
                 {
-                    if(tokentype is LexerType.Token_Minus)
+
+                    if(left is null)
                     {
-                        if(Start is not null)
-                        {
-                            Start = Start with { Op = '-' };
-                        }
+                        throw new Exception("Cannot start the arithmetic expression with a operator!");
+                    }
 
+                    if (tokentype is LexerType.Token_Minus)
+                    {
+                        pendingop = '-';
+                    }
+                    else if(tokentype is LexerType.Token_Multiply)
+                    {
 
-                        throw new Exception("Cannot assign + or - as first arithmetic token");
+                        pendingop = '*';
+                    }
+                    else if(tokentype is LexerType.Token_Divide)
+                    {
+                        pendingop = '/';
+                    }
+                    else if(tokentype is LexerType.Token_Add)
+                    {
+                        pendingop = '+';
                     }
 
                     continue;
@@ -61,22 +103,50 @@ namespace Automa.Source.Core
                     {
                         inParen = true;
                     }
-                    else
-                    {
-                        pd++;
-                    }
+
+                    int skip = i + 1;
+                    Push(ParseArithmetic(out int tskip, tokens.Skip(skip)));
+                    i += tskip;
 
                     continue;
                 }else if(tokentype is LexerType.Token_RParen) // )
                 {
                     if (inParen)
                     {
-                        pd--;
+                        inParen = false;
+                        break;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Missing L brace!");
+                    }
+                }else if(tokentype is LexerType.Token_Identifier) // variable handling (scope based)
+                {
+
+                    if(left is null)
+                    {
+                        Push(new VariableNode(content));
+                    }
+                    else
+                    {
+
+                        if (next is not null) // parse the next operations
+                        {
+                            int skip = i + 1;
+                            Push(ParseArithmetic(out int tskip, tokens.Skip(skip)));
+
+                            i += tskip;
+                            continue;
+                        }
+
+                        Push(new VariableNode(content));
                     }
                 }
             }
 
-            return Start;
+            TokensConsumed = tc;
+
+            return left;
         }
 
     }

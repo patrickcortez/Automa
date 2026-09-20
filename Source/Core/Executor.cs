@@ -124,6 +124,11 @@ namespace Automa.Source.Core
                                 Variables.Add(new(run.Properties.Target, run.Run()));
                                 break;
                             }
+                            else if(assignment.type is ArithmeticAssign arith) // handle arithmetic
+                            {
+                                arith.Eval(Variables);
+                                break;
+                            }
 
                             break;
                         case IfBlock block:

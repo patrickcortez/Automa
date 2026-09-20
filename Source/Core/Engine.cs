@@ -220,7 +220,7 @@ namespace Automa.Source.Core
                             {
                                 Tokens.Add(new LexerToken(LexerType.Token_Multiply, LineNo));
                                 continue;
-                            }else if(c is '\\') 
+                            }else if(c is '/') 
                             {
                                 Tokens.Add(new LexerToken(LexerType.Token_Divide, LineNo));
                             }

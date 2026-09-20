@@ -656,7 +656,7 @@ namespace Automa.Source.Core
                     // Check Tokens
 
                     // Handle keywords: if,elif,else and etc...
-                    if(CT is LexerType.Token_KeyWord && depth is 0) 
+                    if(CT is LexerType.Token_KeyWord) 
                     {
                         string keyword = Current.Content.ToString();
                         prevTok = CT;

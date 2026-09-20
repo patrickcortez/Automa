@@ -42,7 +42,7 @@ namespace Automa.Source.Core
                             {
                                 if (isdebug)
                                 {
-                                    Console.WriteLine("[Debug] with Variable assignment type");
+                                    Console.WriteLine("Variable assignment type");
                                 }
 
                                 Variable newVariable = var.variable;
@@ -76,7 +76,7 @@ namespace Automa.Source.Core
                             {
                                 if (isdebug)
                                 {
-                                    Console.WriteLine("[Debug] with Read assignment type");
+                                    Console.WriteLine("Read assignment type");
                                 }
 
                                 if(read.target is "null")
@@ -126,7 +126,14 @@ namespace Automa.Source.Core
                             }
                             else if(assignment.type is ArithmeticAssign arith) // handle arithmetic
                             {
-                                arith.Eval(Variables);
+
+                                if (isdebug)
+                                {
+                                    Console.WriteLine("Arithmetic assignment type");
+                                }
+
+
+                                Variables = arith.UpdateScope(Variables).ToList();
                                 break;
                             }
 

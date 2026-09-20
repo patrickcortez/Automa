@@ -659,6 +659,7 @@ namespace Automa.Source.Core
                     if(CT is LexerType.Token_KeyWord && depth is 0) // Handle keywords
                     {
                         string keyword = Current.Content.ToString();
+                        prevTok = CT;
 
                         if(keyword is "If" or "Elif" or "Else") // Conditional
                         {
@@ -1000,9 +1001,9 @@ namespace Automa.Source.Core
 
                             if (isArith && !inBlock)
                             {
-                                Arithmetic arith = new(ArithmeticTokens);
+                                Arithmetic arith = new(ArithmeticTokens,isdebug);
 
-                                NodeBuilder.AddNode(new AssignInstruction(new ArithmeticAssign(arith.ParseArithmetic(out int _, _Tokens),varname)));
+                                NodeBuilder.AddNode(new AssignInstruction(new ArithmeticAssign(arith.ParseArithmetic(out int _),varname)));
 
                                 ArithReset();
                                 continue;
@@ -1010,16 +1011,16 @@ namespace Automa.Source.Core
 
                             if(isArith && inBlock)
                             {
-                                Arithmetic arith = new(ArithmeticTokens);
+                                Arithmetic arith = new(ArithmeticTokens,isdebug);
 
-                                NodeBuilder.AddNode(new AssignInstruction(new ArithmeticAssign(arith.ParseArithmetic(out int _, _Tokens), varname)), true);
+                                NodeBuilder.AddNode(new AssignInstruction(new ArithmeticAssign(arith.ParseArithmetic(out int _), varname)), true);
 
                                 ArithReset();
                                 continue;
 
                             }
 
-                            if (inBlock && depth is 1)
+                            if ((inBlock && !isArith) && depth is 1)
                             {
                                 NodeBuilder.AddNode(new AssignInstruction(new VariableAssign(new(varname, CC.content, _type))), inBlock);
                                 //reset all before proceeding to the next
@@ -1031,7 +1032,7 @@ namespace Automa.Source.Core
                                 continue;
                             }
 
-                            if (!inBlock && depth is 0)
+                            if ((!inBlock && !isArith) && depth is 0)
                             {
                                 NodeBuilder.AddNode(new AssignInstruction(new VariableAssign(new(varname, CC.content, _type))));
                                 //reset all before proceeding to the next

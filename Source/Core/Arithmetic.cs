@@ -12,7 +12,7 @@ using System.Text;
 
 namespace Automa.Source.Core
 {
-    internal class Arithmetic(IEnumerable<LexerToken> Tokens)
+    internal class Arithmetic(IEnumerable<LexerToken> Tokens,bool isdebug=false)
     {
 
         public ArithmeticNode? ParseArithmetic(out int TokensConsumed,IEnumerable<LexerToken>? Starting = null)
@@ -26,12 +26,20 @@ namespace Automa.Source.Core
             bool inParen = false;
             int pd = 0;
 
-            LexerToken[] tokens = Starting.ToArray() ?? Tokens.ToArray();
+            LexerToken[] tokens = (Starting is not null)? Starting.ToArray() : Tokens.ToArray();
 
             int tc = 0;
 
+            if (isdebug)
+            {
+                Console.WriteLine("[DEBUG] Parsing Arithmetic");
+            }
+
             for(int i = 0; i < tokens.Count(); i++)
             {
+
+                
+
                 LexerToken token = tokens[i];
                 LexerToken? next = null;
                 LexerType tokentype = token.TokenType;
@@ -45,8 +53,12 @@ namespace Automa.Source.Core
                     next = tokens[Peek];
                 }
 
+                if (isdebug)
+                {
+                    Console.WriteLine($"[DEBUG] Current Type: {tokentype} , Value: {content}");
+                }
 
-                if(tokentype is LexerType.TokenInt) //123
+                if (tokentype is LexerType.TokenInt) //123
                 {
                     int val = int.Parse(content);
 

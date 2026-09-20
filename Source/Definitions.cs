@@ -151,9 +151,11 @@ namespace Automa.Source
      
     internal record ArithmeticAssign(ArithmeticNode node,string target) : AssignType
     {
-        public void Eval(IEnumerable<Variable> Scope)
+        public IEnumerable<Variable> UpdateScope(IEnumerable<Variable> Scope)
         {
             Variable? Result = Scope.FirstOrDefault(e => e.name == target);
+            List<Variable> scope = Scope.ToList();
+            int index = Scope.ToArray().IndexOf(Result);
 
                 int val = 0;
 
@@ -176,11 +178,15 @@ namespace Automa.Source
 
             if(Result is null)
             {
-                Scope.ToList().Add(new Variable(target, val.ToString()));
-                return;
+                scope.Add(new Variable(target, val.ToString()));
+                return scope;
             }
 
             Result = Result with { value = val.ToString() };
+
+            scope[index] = Result;
+
+            return scope;
         }
     }
 

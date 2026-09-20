@@ -55,6 +55,11 @@ namespace Automa.Source.Core
                     StringBuilder Value = new(),identifier = new();
                     bool isInQoutes = false;
 
+                    if (isdebug)
+                    {
+                        Console.WriteLine($"[DEBUG] Current Line:");
+                    }
+
                     foreach (char c in line)
                     {
                         // Qoute Checking
@@ -62,6 +67,11 @@ namespace Automa.Source.Core
                         {
                             isInQoutes = !isInQoutes;
                             continue;
+                        }
+
+                        if (isdebug)
+                        {
+                            Console.Write(c);
                         }
 
                         // integer handling
@@ -205,23 +215,67 @@ namespace Automa.Source.Core
                             }
                             else if (c is '+')
                             {
+                                if(Value.Length is not 0)
+                                {
+                                    string Val = Value.ToString();
+
+                                    Tokens.Add(new(LexerType.TokenInt, LineNo, Val));
+                                    Value.Clear();
+                                }
+
                                 Tokens.Add(new(LexerType.Token_Add, LineNo));
                                 continue;
                             }
                             else if (c is '-')
                             {
+
+                                if (Value.Length is not 0)
+                                {
+                                    string Val = Value.ToString();
+
+                                    Tokens.Add(new(LexerType.TokenInt, LineNo, Val));
+                                    Value.Clear();
+                                }
+
                                 Tokens.Add(new(LexerType.Token_Minus, LineNo));
                                 continue;
                             }else if(c is '!')
                             {
+
+                                if (Value.Length is not 0)
+                                {
+                                    string Val = Value.ToString();
+
+                                    Tokens.Add(new(LexerType.TokenInt, LineNo, Val));
+                                    Value.Clear();
+                                }
+
                                 Tokens.Add(new(LexerType.Token_Not, LineNo));
                                 continue;
                             }else if( c is '*')
                             {
+
+                                if (Value.Length is not 0)
+                                {
+                                    string Val = Value.ToString();
+
+                                    Tokens.Add(new(LexerType.TokenInt, LineNo, Val));
+                                    Value.Clear();
+                                }
+
                                 Tokens.Add(new LexerToken(LexerType.Token_Multiply, LineNo));
                                 continue;
                             }else if(c is '/') 
                             {
+
+                                if (Value.Length is not 0)
+                                {
+                                    string Val = Value.ToString();
+
+                                    Tokens.Add(new(LexerType.TokenInt, LineNo, Val));
+                                    Value.Clear();
+                                }
+
                                 Tokens.Add(new LexerToken(LexerType.Token_Divide, LineNo));
                             }
                         }

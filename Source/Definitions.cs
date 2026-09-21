@@ -203,12 +203,32 @@ namespace Automa.Source
 
 
 
-    internal record WhileBlock(Expression expr) : Block // While( expr ) { }
+    internal record WhileBlock(LogOp node) : Block // While( expr ) { }
     {
         public Instruction? next { get; set; } = null;
 
-        // Make execute block
+        public bool Eval(List<Variable> Scope) => node switch
+        {
+            LogicalUnit single => single.Eval(Scope),
+            Or or => or.Eval(Scope),
+            And and => and.Eval(Scope),
+            _ => false
+        };
 
+
+        public int ExecuteBlock(List<Variable> Scope)
+        {
+            Executor execute = new(Body,Scope);
+
+            int exitc = 0;
+
+            while (Eval(Scope))
+            {
+              exitc = execute.Start();
+            }
+
+            return exitc;
+        }
 
     }
 

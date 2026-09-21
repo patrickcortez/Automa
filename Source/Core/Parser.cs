@@ -6,6 +6,7 @@ using System.Reflection.Metadata;
 using System.Runtime;
 using System.Text;
 using System.Threading.Tasks.Dataflow;
+using System.Transactions;
 using static Automa.Source.Utility.Utils;
 
 using ExpOperand = (string Content, string Type);
@@ -514,6 +515,13 @@ namespace Automa.Source.Core
                                 continue;
                             }
 
+                        }else if(keyword is "While")
+                        {
+                            CurrentBlock = "While";
+                            inBlock = true;
+
+                            continue;
+
                         }
 
                         if (isAssign || inParen)
@@ -830,6 +838,12 @@ namespace Automa.Source.Core
                     block.Body = Bob.Build();
 
                     return (T)(object)block;
+                }else if(type == typeof(WhileBlock))
+                {
+                    WhileBlock block = new WhileBlock(expr);
+                    block.Body = Bob.Build();
+
+                    return (T)(object)block;
                 }
 
                 return (T)(object)null; // this is basically unrecheable but we have to return something -_-.
@@ -920,6 +934,9 @@ namespace Automa.Source.Core
                         else if (CB is "Elif")
                         {
                             NodeBuilder.AddNode(new Elif(expr));
+                        }else if(CB is "While")
+                        {
+                            NodeBuilder.AddNode(new WhileBlock(expr));
                         }
 
 
@@ -1024,6 +1041,28 @@ namespace Automa.Source.Core
 
                             }
                         }
+                        else if (keyword is "While")
+                        {
+                            if (inBlock && depth is 1)
+                            {
+                                NodeBuilder.AddNode(ParseStatement<WhileBlock>(Current, out int tokenConsumed));
+
+                                if (isdebug)
+                                {
+                                    Console.WriteLine($"[DEBUG] With {tokenConsumed} instructions");
+                                }
+
+                                if (tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
+                            }
+                            else if(!inBlock && depth is 0)
+                            {
+                                CB = keyword;
+                                inBlock = true;
+
+                            }
+
+                            continue;
+                        }
                         else // Read, Write and Run
                         {
 
@@ -1033,9 +1072,9 @@ namespace Automa.Source.Core
                                 {
                                     CC.type = keyword;
                                     continue;
-                                }else if(keyword is "Write")
+                                }else if(keyword is "Write" or "While")
                                 {
-                                    throw new Exception($"Cannot assign instruction 'WRITE' at {Current.Line}");
+                                    throw new Exception($"Cannot assign instruction 'WRITE' or 'WHILE' at {Current.Line}");
                                 }
 
 

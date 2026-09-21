@@ -210,6 +210,17 @@ namespace Automa.Source.Core
 
                             break;
 
+                        case WhileBlock While:
+
+                            Hold = Variables.ToList();
+
+                            if (While.Eval(Variables))
+                            {
+                                While.ExecuteBlock(Variables);
+                            }
+
+                            Compare(Variables);
+                            break;
                         default:
                             break;
 

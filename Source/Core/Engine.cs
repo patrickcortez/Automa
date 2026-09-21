@@ -25,7 +25,7 @@ namespace Automa.Source.Core
          // Lex: ==,!=,>= and <=
          // properly parse Comparators and remove toggling.
 
-        private string[] keyWords = ["If", "Elif","Else","Write","Run","Read"];
+        private string[] keyWords = ["If", "Elif","Else","Write","Run","Read","While"];
         private string lastIdent = "";
 
         private LexerToken[]? Tokenize() // Lexer & Tokenizer

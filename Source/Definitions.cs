@@ -44,12 +44,14 @@ namespace Automa.Source
         Token_KeyWord,
         Token_GreaterThan, // >
         Token_LessThan, // <
-        Token_Or, // |
-        Token_And, // &
+        Token_Or, // ||
+        Token_And, // &&
         Token_EqualTo, // ==
         Token_NotEqualTo, // !=
         Token_GTE, // >=
         Token_LTE, // <=
+        Token_Pipe, // |
+        Token_Ampersand, // &
         Token_None // Default value;
     }
 
@@ -279,7 +281,7 @@ namespace Automa.Source
         }
     }
 
-    internal record And(LogOp Left, LogOp Right, LogOp? next = null) : LogOp
+    internal record And(LogOp Left, LogOp Right) : LogOp
     {
 
         public override bool Eval(List<Variable> Scope) => Left.Eval(Scope) && Right.Eval(Scope);
@@ -388,6 +390,138 @@ namespace Automa.Source
         }
 
 
+    }
+
+    internal record GreaterThan(Operand Left, Operand Right) : Expression
+    {
+        public override bool Evaluate(List<Variable> Variables)
+        {
+            try
+            {
+
+                int Lval = Left switch
+                {
+                    LiteralExpression rexpr => int.Parse(rexpr.value),
+                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
+                    _ => 0
+                };
+
+                int Rval = Right switch
+                {
+                    LiteralExpression rexpr => int.Parse(rexpr.value),
+                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
+                    _ => 0
+                };
+
+
+
+                return Lval > Rval;
+            }
+            catch(Exception ex)
+            {
+                Console.Error.WriteLine($"Cannot numerically compare strings! \n{ex}");
+                return false;
+            }
+        }
+    }
+
+    internal record LessThan(Operand Left, Operand Right) : Expression
+    {
+        public override bool Evaluate(List<Variable> Variables)
+        {
+            try
+            {
+
+                int Lval = Left switch
+                {
+                    LiteralExpression rexpr => int.Parse(rexpr.value),
+                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
+                    _ => 0
+                };
+
+                int Rval = Right switch
+                {
+                    LiteralExpression rexpr => int.Parse(rexpr.value),
+                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
+                    _ => 0
+                };
+
+
+
+                return Lval < Rval;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Cannot numerically compare strings! \n{ex}");
+                return false;
+            }
+        }
+    }
+
+    internal record GTE(Operand Left, Operand Right) : Expression
+    {
+        public override bool Evaluate(List<Variable> Variables)
+        {
+            try
+            {
+
+                int Lval = Left switch
+                {
+                    LiteralExpression rexpr => int.Parse(rexpr.value),
+                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
+                    _ => 0
+                };
+
+                int Rval = Right switch
+                {
+                    LiteralExpression rexpr => int.Parse(rexpr.value),
+                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
+                    _ => 0
+                };
+
+
+
+                return Lval >= Rval;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Cannot numerically compare strings! \n{ex}");
+                return false;
+            }
+        }
+    }
+
+    internal record LTE(Operand Left, Operand Right) : Expression
+    {
+        public override bool Evaluate(List<Variable> Variables)
+        {
+            try
+            {
+
+                int Lval = Left switch
+                {
+                    LiteralExpression rexpr => int.Parse(rexpr.value),
+                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
+                    _ => 0
+                };
+
+                int Rval = Right switch
+                {
+                    LiteralExpression rexpr => int.Parse(rexpr.value),
+                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
+                    _ => 0
+                };
+
+
+
+                return Lval <= Rval;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Cannot numerically compare strings! \n{ex}");
+                return false;
+            }
+        }
     }
 
     //Processes

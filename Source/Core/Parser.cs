@@ -18,7 +18,7 @@ namespace Automa.Source.Core
         string[] LogicOps = ["||", "&&"];
 
         // Expression handling: logical or Arithmetic. Currently its Just Logical (for now)
-        private Expression? ParseExpression(List<LexerToken> Tokens)
+        private LogOp? ParseExpression(List<LexerToken> Tokens)
         {
             try
             {
@@ -26,8 +26,20 @@ namespace Automa.Source.Core
                 {
                     throw new Exception($"Insufficient Tokens for Expression in Line: {Tokens[0].Line}");
                 }
-                Expression? expr = null;
+                LogOp? expr = null;
+
+                bool hasLogicalOps = false;
+
                 string Operator = "",LogicOp="";
+
+                List<LexerToken>? NextUnit = null;
+
+                void SetNext(List<LexerToken> Trimmed,LexerType type)
+                {
+                    NextUnit = Trimmed.ToList();
+
+                    LogicOp = (type is LexerType.Token_And) ? "And" : "Or";
+                }
 
                 ExpOperand left = new(),right=new();
 
@@ -66,30 +78,40 @@ namespace Automa.Source.Core
                         PrevType = CT;
                         continue;
                     }
-                    else if (CT is LexerType.Token_Equal)
+                    else if (CT is LexerType.Token_EqualTo or LexerType.Token_NotEqualTo)
                     {
-                        if (PrevType is LexerType.Token_Equal)
-                        {
-                            Operator = "EQ";
-                        }
-                        else if (PrevType is LexerType.Token_Not)
-                        {
-                            Operator = "NEQ";
-                        }
-
+                        Operator = (CT is LexerType.Token_EqualTo)?"EQ":"NEQ";
                         PrevType = CT;
                         continue;
+                    } 
+                    else if (CT is LexerType.Token_GreaterThan or LexerType.Token_GTE) 
+                    {
+                        Operator = (CT is LexerType.Token_GreaterThan)?"GT":"GTE";
+                        PrevType = CT;
+                        continue;
+                    } 
+                    else if(CT is LexerType.Token_LessThan or LexerType.Token_LTE)
+                    {
+                        Operator = (CT is LexerType.Token_LessThan)?"LT":"LTE";
+                        PrevType = CT;
+                        continue;
+                    }
+                    else if (CT is LexerType.Token_And or LexerType.Token_Or)
+                    {
+                        hasLogicalOps = true;
+                        int skip = Tokens.IndexOf(Current) + 1;
+                        List<LexerToken> newList = Tokens.Skip(skip).ToList();
+
+                        SetNext(newList, CT);
+                        break;
                     }
                     else if (CT is LexerType.TokenString or LexerType.TokenInt)
                     {
                         string content = Current.GetContent();
-                        string type = (CT is LexerType.TokenString) ? "String" : "Int"; 
+                        string type = (CT is LexerType.TokenString) ? "String" : "Int";
 
                         if (Operator.Length is 0)
                         {
-
-
-
                             left = (Current.GetContent(), type);
                         }
                         else
@@ -107,24 +129,43 @@ namespace Automa.Source.Core
                 }
 
                 string lcontent = left.Content, rcontent = right.Content;
+                
 
                 if (Operator == "EQ")
                 {
-
-                    EqualTo nexpr = new EqualTo(new LiteralExpression(lcontent), new LiteralExpression(rcontent));
+                   
+                    EqualTo eq = new EqualTo(new LiteralExpression(lcontent), new LiteralExpression(rcontent));
 
                     if(left.Type is "Identifier")
                     {
-                        nexpr = nexpr with { Left = new VariableExpression(lcontent) };
+                        eq = eq with { Left = new VariableExpression(lcontent) };
                     }
 
 
                     if(right.Type is "Identifier")
                     {
-                        nexpr = nexpr with { Right = new VariableExpression(rcontent) };
+                        eq = eq with { Right = new VariableExpression(rcontent) };
                     }
 
-                    expr = nexpr;
+                    if (!hasLogicalOps)
+                    {
+                        expr = new LogicalUnit(eq);
+                    }
+                    else
+                    {
+                        if(LogicOp is "And")
+                        {
+
+                            LogOp Current = new LogicalUnit(eq);
+
+                            expr = new And(Current, ParseExpression(NextUnit));
+                        }else if(LogicOp is "Or")
+                        {
+                            LogOp Current = new LogicalUnit(eq);
+
+                            expr = new Or(Current, ParseExpression(NextUnit));
+                        }
+                    }
 
                 }
                 else if (Operator == "NEQ")
@@ -142,7 +183,154 @@ namespace Automa.Source.Core
                         nexpr = nexpr with { Right = new VariableExpression(rcontent) };
                     }
 
-                    expr = nexpr;
+                    if (!hasLogicalOps)
+                    {
+                        expr = new LogicalUnit(nexpr); // Single Logical Unit
+                    }
+                    else
+                    {
+                        LogOp Current = new LogicalUnit(nexpr);
+
+                        if (LogicOp is "And")
+                        {
+                            expr = new And(Current, ParseExpression(NextUnit));
+                        }
+                        else if (LogicOp is "Or")
+                        {
+                            expr = new Or(Current, ParseExpression(NextUnit));
+                        }
+                    }
+                }else if(Operator is "GT")
+                {
+                    GreaterThan nexpr = new GreaterThan(new LiteralExpression(lcontent), new LiteralExpression(rcontent));
+
+                    if (left.Type is "Identifier")
+                    {
+                        nexpr = nexpr with { Left = new VariableExpression(lcontent) };
+                    }
+
+
+                    if (right.Type is "Identifier")
+                    {
+                        nexpr = nexpr with { Right = new VariableExpression(rcontent) };
+                    }
+
+                    if (!hasLogicalOps)
+                    {
+                        expr = new LogicalUnit(nexpr); // Single Logical Unit
+                    }
+                    else
+                    {
+                        LogOp Current = new LogicalUnit(nexpr);
+
+                        if (LogicOp is "And")
+                        {
+                            expr = new And(Current, ParseExpression(NextUnit));
+                        }
+                        else if (LogicOp is "Or")
+                        {
+                            expr = new Or(Current, ParseExpression(NextUnit));
+                        }
+                    }
+                }
+                else if (Operator is "LT")
+                {
+                    LessThan nexpr = new LessThan(new LiteralExpression(lcontent), new LiteralExpression(rcontent));
+
+                    if (left.Type is "Identifier")
+                    {
+                        nexpr = nexpr with { Left = new VariableExpression(lcontent) };
+                    }
+
+
+                    if (right.Type is "Identifier")
+                    {
+                        nexpr = nexpr with { Right = new VariableExpression(rcontent) };
+                    }
+
+                    if (!hasLogicalOps)
+                    {
+                        expr = new LogicalUnit(nexpr); // Single Logical Unit
+                    }
+                    else
+                    {
+                        LogOp Current = new LogicalUnit(nexpr);
+
+                        if (LogicOp is "And")
+                        {
+                            expr = new And(Current, ParseExpression(NextUnit));
+                        }
+                        else if (LogicOp is "Or")
+                        {
+                            expr = new Or(Current, ParseExpression(NextUnit));
+                        }
+                    }
+                }
+                else if (Operator is "GTE")
+                {
+                    GTE nexpr = new GTE(new LiteralExpression(lcontent), new LiteralExpression(rcontent));
+
+                    if (left.Type is "Identifier")
+                    {
+                        nexpr = nexpr with { Left = new VariableExpression(lcontent) };
+                    }
+
+
+                    if (right.Type is "Identifier")
+                    {
+                        nexpr = nexpr with { Right = new VariableExpression(rcontent) };
+                    }
+
+                    if (!hasLogicalOps)
+                    {
+                        expr = new LogicalUnit(nexpr); // Single Logical Unit
+                    }
+                    else
+                    {
+                        LogOp Current = new LogicalUnit(nexpr);
+
+                        if (LogicOp is "And")
+                        {
+                            expr = new And(Current, ParseExpression(NextUnit));
+                        }
+                        else if (LogicOp is "Or")
+                        {
+                            expr = new Or(Current, ParseExpression(NextUnit));
+                        }
+                    }
+                }
+                else if (Operator is "LTE")
+                {
+                    LTE nexpr = new LTE(new LiteralExpression(lcontent), new LiteralExpression(rcontent));
+
+                    if (left.Type is "Identifier")
+                    {
+                        nexpr = nexpr with { Left = new VariableExpression(lcontent) };
+                    }
+
+
+                    if (right.Type is "Identifier")
+                    {
+                        nexpr = nexpr with { Right = new VariableExpression(rcontent) };
+                    }
+
+                    if (!hasLogicalOps)
+                    {
+                        expr = new LogicalUnit(nexpr); // Single Logical Unit
+                    }
+                    else
+                    {
+                        LogOp Current = new LogicalUnit(nexpr);
+
+                        if (LogicOp is "And")
+                        {
+                            expr = new And(Current, ParseExpression(NextUnit));
+                        }
+                        else if (LogicOp is "Or")
+                        {
+                            expr = new Or(Current, ParseExpression(NextUnit));
+                        }
+                    }
                 }
 
                 return expr;
@@ -162,7 +350,7 @@ namespace Automa.Source.Core
                 Type type = typeof(T);
                 List<LexerToken> expression = new();
                 int StartingIndex = LexTok.IndexOf(Starting);
-                Expression? expr = null;
+                LogOp? expr = null;
                 LexerType? PrevTok = null;
                 bool inBlock = false, 
                         inParen = false,
@@ -628,14 +816,14 @@ namespace Automa.Source.Core
                 }
                 else if (type == typeof(Elif))
                 {
-                    Elif block = new Elif(expr, new());
+                    Elif block = new Elif(expr);
                     block.Body = Bob.Build();
 
                     return (T)(object)block;
                 }
                 else if (type == typeof(Else))
                 {
-                    Else block = new Else(new());
+                    Else block = new Else();
                     block.Body = Bob.Build();
 
                     return (T)(object)block;
@@ -671,7 +859,7 @@ namespace Automa.Source.Core
                 List<LexerToken> ArithmeticTokens = new();
 
                 LexerToken[] _Tokens = LexTok;
-                Expression? expr = null;
+                LogOp? expr = null;
                 LexerToken? Peek = null;
 
 
@@ -724,11 +912,11 @@ namespace Automa.Source.Core
 
                         if (CB is "If") // add Block nodes before  the next token comes;
                         {
-                            NodeBuilder.AddNode(new IfBlock(expr, new()));
+                            NodeBuilder.AddNode(new IfBlock(expr));
                         }
                         else if (CB is "Elif")
                         {
-                            NodeBuilder.AddNode(new Elif(expr, new()));
+                            NodeBuilder.AddNode(new Elif(expr));
                         }
 
 
@@ -821,13 +1009,12 @@ namespace Automa.Source.Core
                             }
                             else
                             {
-                                CI = keyword;
-                                CB = CI;
+                                CB = keyword;
                                 inBlock = true;
 
                                 if (keyword is "Else")
                                 {
-                                    NodeBuilder.AddNode(new Else(new()));
+                                    NodeBuilder.AddNode(new Else());
                                 }
 
                                 continue;

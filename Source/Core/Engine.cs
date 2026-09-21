@@ -60,9 +60,27 @@ namespace Automa.Source.Core
                         Console.WriteLine($"[DEBUG] Current Line:");
                     }
 
-                    foreach (char c in line)
+                    for(int i = 0; i < line.Length;i++)
                     {
                         // Qoute Checking
+
+                        char c = line[i];
+
+                        char Peek = ' ',Back = ' ';
+                        int next = i + 1;
+                        int prev = i - 1;
+
+                        if(next < line.Length)
+                        {
+                            Peek = line[next];
+                        }
+
+                        if(prev > 0)
+                        {
+                            Back = line[prev];
+                        }
+
+
                         if (c is '\"')
                         {
                             isInQoutes = !isInQoutes;
@@ -146,7 +164,7 @@ namespace Automa.Source.Core
                                 if (Value.Length > 0)
                                 {
                                     string Val = Value.ToString();
-                                    if(int.TryParse(Val,out int value)) // if value is int
+                                    if (int.TryParse(Val, out int value)) // if value is int
                                     {
                                         Tokens.Add(new(LexerType.TokenInt, LineNo, Val));
                                         Value.Clear();
@@ -170,13 +188,13 @@ namespace Automa.Source.Core
                             }
                             else if (c is ')')
                             {
-                                if(Value.Length > 0)
+                                if (Value.Length > 0)
                                 {
                                     string val = Value.ToString();
 
-                                    if(int.TryParse(val,out int num))
+                                    if (int.TryParse(val, out int num))
                                     {
-                                        Tokens.Add(new(LexerType.TokenInt, LineNo,val));
+                                        Tokens.Add(new(LexerType.TokenInt, LineNo, val));
                                     }
                                     else
                                     {
@@ -200,14 +218,36 @@ namespace Automa.Source.Core
                             }
                             else if (c is '=')
                             {
-                                if(Value.Length > 0)
+                                if (Value.Length > 0)
                                 {
-                                    if (int.TryParse(Value.ToString(),out int val)) // make sure the left side is not a string or int literal
+                                    if (int.TryParse(Value.ToString(), out int val)) // make sure the left side is not a string or int literal
                                     {
                                         throw new Exception("Cannot assign a value to a integer literal");
                                     }
 
                                     throw new Exception("Cannot assign a value to a string literal");
+                                }
+
+                                if(Back is not ' ') // Comparator guard-clause
+                                {
+                                    if(Back is '=' or '>' or '<' or '!')
+                                    {
+                                        continue;
+                                    }
+                                }
+
+                                if (Peek is not ' ') // equalto identifier
+                                {
+                                    if(Peek == '=')
+                                    {
+                                        Tokens.Add(new(LexerType.Token_EqualTo, LineNo));
+                                    }
+                                    else
+                                    {
+                                        Tokens.Add(new(LexerType.Token_Equal, LineNo));
+                                    }
+
+                                    continue;
                                 }
 
                                 Tokens.Add(new(LexerType.Token_Equal, LineNo));
@@ -250,7 +290,19 @@ namespace Automa.Source.Core
                                     Value.Clear();
                                 }
 
-                                Tokens.Add(new(LexerType.Token_Not, LineNo));
+                                if (Peek is '=' and not ' ')
+                                {
+                                    Tokens.Add(new(LexerType.Token_NotEqualTo, LineNo));
+                                }
+                                else if(Peek is not '=' and not ' ')
+                                {
+                                    Tokens.Add(new(LexerType.Token_Not, LineNo));
+                                }
+                                else
+                                {
+                                    throw new Exception($"Missing Token at {LineNo}");
+                                }
+
                                 continue;
                             }else if( c is '*')
                             {
@@ -265,7 +317,7 @@ namespace Automa.Source.Core
 
                                 Tokens.Add(new LexerToken(LexerType.Token_Multiply, LineNo));
                                 continue;
-                            }else if(c is '/') 
+                            }else if(c is '/') // divide
                             {
 
                                 if (Value.Length is not 0)
@@ -277,6 +329,70 @@ namespace Automa.Source.Core
                                 }
 
                                 Tokens.Add(new LexerToken(LexerType.Token_Divide, LineNo));
+                            }
+                            else if(c is '>') // greater than
+                            {
+
+                                if(Peek is '=' and not ' ')
+                                {
+                                    Tokens.Add(new(LexerType.Token_GTE, LineNo));
+                                }else if(Peek is not '=' and not ' ')
+                                {
+                                    Tokens.Add(new(LexerType.Token_GreaterThan, LineNo));
+                                }
+                                else
+                                {
+                                    throw new Exception($"Missing tokens at {LineNo}");
+                                }
+
+                                continue;
+
+                            }
+                            else if(c is '<') // less than
+                            {
+                                if (Peek is '=' and not ' ')
+                                {
+                                    Tokens.Add(new(LexerType.Token_LTE, LineNo));
+                                }
+                                else if (Peek is not '=' and not ' ')
+                                {
+                                    Tokens.Add(new(LexerType.Token_LessThan, LineNo));
+                                }
+                                else
+                                {
+                                    throw new Exception($"Missing tokens at {LineNo}");
+                                }
+
+                            }else if(c is '|')
+                            {
+                                if(Peek is '|' and not ' ' && Back is not '|')
+                                {
+                                    Tokens.Add(new(LexerType.Token_Or, LineNo));
+                                }else if(Peek is not '|' and not ' ' && Back is not '|')
+                                {
+                                    Tokens.Add(new(LexerType.Token_Pipe, LineNo));
+                                }
+                                else
+                                {
+                                    continue;
+                                }
+                            }else if(c is '&')
+                            {
+
+                                if(Peek is '&' and not ' ' && Back is not '&')
+                                {
+                                    Tokens.Add(new(LexerType.Token_And, LineNo));
+                                }
+                                else if(Peek is not '&' and not ' ' && Back is '&')
+                                {
+                                    continue;
+                                }
+                                else if(Peek is not '&' and not ' ' && Back is not '&')
+                                {
+                                    Tokens.Add(new(LexerType.Token_Ampersand, LineNo));
+                                }
+
+                                continue;
                             }
                         }
                         else if (isInQoutes) // String Literal

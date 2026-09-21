@@ -19,12 +19,13 @@ The Following instructions of **Automa**:
 - **Elif** : Elif/Else if Block
 - **Else** : Else Block
 - **Run** : Run a external command/application.
+- **While** : for looping purposes
 
 ## Assignment Types
 
 The Following are the assignment types:
 
-- **Run** : Run Block for running processes
+- **Run** : Run Block for running processes and assign its exit code to a variable.
 - **Read**  : Read Input 
 - **Variable** : Declare variable
 - **Arithmetic** : Mathematical Assignment type: `num=20+19`. Supports:
@@ -65,6 +66,15 @@ name = "Cortez"
 sum = 20 + 20; # arithmetic assignment
 
 diff = sum - 20; 
+
+Secnum = 0;
+
+While(Secnum < 10){
+
+	Write("Current Iteration: $Secnum");
+	Secnum = Secnum + 1; # Will add increment and decrement soon... =P
+
+}
 
 If(sum > diff){ 
 	Write("$sum is greater than $diff");

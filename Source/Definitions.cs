@@ -216,15 +216,18 @@ namespace Automa.Source
         };
 
 
-        public int ExecuteBlock(List<Variable> Scope)
+        public int ExecuteBlock(List<Variable> Scope) // While executor
         {
-            Executor execute = new(Body,Scope);
-
             int exitc = 0;
 
             while (Eval(Scope))
             {
-              exitc = execute.Start();
+                int before = Scope.Count; // save Scope count before starting, so its one pass
+                Executor execute = new(Body,Scope);
+
+                exitc = execute.Start();
+
+                Scope.RemoveRange(before, Scope.Count - before); // filter out new
             }
 
             return exitc;

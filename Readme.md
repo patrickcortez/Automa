@@ -6,6 +6,9 @@
 **Automa** is a Simple Automation Language developed in C#. **Automa's** over all functionality is for
 automation in your machine, Automa has atleast 5 instructions for automation.
 
+> [!NOTE]
+> Always end your instructions in `;`.
+
 ## Instructions
 
 The Following instructions of **Automa**:
@@ -15,6 +18,7 @@ The Following instructions of **Automa**:
 - **If** : If Block which can be nested
 - **Elif** : Elif/Else if Block
 - **Else** : Else Block
+- **Run** : Run a external command/application.
 
 ## Assignment Types
 
@@ -23,12 +27,48 @@ The Following are the assignment types:
 - **Run** : Run Block for running processes
 - **Read**  : Read Input 
 - **Variable** : Declare variable
+- **Arithmetic** : Mathematical Assignment type: `num=20+19`. Supports:
+	- Addition
+	- Subtraction
+	- Multiplication
+	- Division
+	- Parenthesis
+
+## Logical Operators:
+
+**Automa** has 2 LogOps:
+
+- **And** : `&&`
+- **Or** : `||`
+
+## Comparators:
+
+**Automa** has about 6:
+
+- **EqualTo** : `==`
+- **NotEqualTo** : `!=`
+- **LessThan** : `<`
+- **LTE**  : `<=`
+- **GreaterThan** : `>`
+- **GTE** : `>=`
+
+## Supported Operands and type
+
+The only two types in Automa is: `String` and `Int`.
 
 ### Example Usage:
 
 ```Automa
 
 name = "Cortez"
+
+sum = 20 + 20; # arithmetic assignment
+
+diff = sum - 20; 
+
+If(sum > diff){ 
+	Write("$sum is greater than $diff");
+}
 
 Write("Hello World")
 
@@ -38,6 +78,11 @@ country = Read("What is your home origin? ")
 
 If(country == "USA")
 {
+
+	If(counter == "USA" && sum == 40){
+		Write("Secret option!");
+	}
+
 Write("Good Choice!")
 
 If(name == "Cortez")

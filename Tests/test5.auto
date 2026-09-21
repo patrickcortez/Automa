@@ -1,0 +1,29 @@
+# Expression testing
+
+num=25;
+Onum=15;
+
+If(Onum < num){
+	Write("$Onum is less than $num");
+}
+Else{
+	Write("$num is less than $Onum");
+}
+
+Nnum = 10;
+
+If(Onum < Nnum){
+	Write("$Onum is lesser than $Nnum");
+}
+Else{
+	Write("$Nnum is lesser than $Onum");
+}
+
+# Logical Operators
+
+
+If(Onum < num && Onum < Nnum){
+	Write("$Onum is the smallest number");
+}
+
+Write("test-Concluded!"); # end of test

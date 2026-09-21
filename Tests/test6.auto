@@ -1,0 +1,16 @@
+# While Loop test
+
+num=0;
+
+Write("Before n=n+1: $num");
+
+num = num + 1;
+
+Write("After: $num");
+
+While(num < 10){
+	Write("current iteration: $num");
+	num = num + 1;
+}
+
+Write("Test Concluded!");

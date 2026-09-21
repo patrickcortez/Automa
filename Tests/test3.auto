@@ -1,0 +1,26 @@
+Write("Nesting test");
+var = Read("Enter In or Out");
+name = "tezzy";
+
+If(name != "tezzy"){
+    Write("is good cuh");
+}
+
+If(var == "In"){
+
+    If(name == "tezzy"){
+        place = "Iloilo";
+        Write("Nice name $name and place $place");
+    }
+    Else{
+        Write("Ohh great name!");
+    }
+    
+    Write("You are in!");
+
+}
+Else{
+    Write("You are out!");
+}
+
+Write("Test done!");

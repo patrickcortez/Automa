@@ -1,0 +1,45 @@
+# Arithmetic test
+
+var=2+2;
+
+nvar = var + 2;
+
+arith = (2 + nvar) * 6;
+
+Write("The Result is $var");
+
+Write("Res of new var is $nvar");
+
+Write("Res of arith is $arith");
+
+If(var == 4){
+	Write("Test 1: Correct!");
+}
+Else{
+	Write("Test 1: Wrong!");
+}
+
+If(nvar == 6){
+	Write("Test 2: Correct!");
+
+	If(var == 4){
+
+		dvar = 2 * 20;
+
+		Write("Secret Dvar res: $dvar");
+		
+	}
+}
+Else{
+	Write("Test 2: Wrong!");
+}
+
+
+If(arith == 48){
+	Write("Test 3: Correct!");
+}
+Else{
+	Write("Test 3: Wrong!");
+}
+
+

@@ -21,9 +21,9 @@ namespace Automa.Source.Core
          * [] ... And so on ...
          */
 
-        // TODO: Add Arithmetic Engine
-        // Plus,Parenthesis Depth and minus
-        // Multiplication and Division is up-to the users to create using upcoming while-loop and functions.
+         // TODO:
+         // Lex: ==,!=,>= and <=
+         // properly parse Comparators and remove toggling.
 
         private string[] keyWords = ["If", "Elif","Else","Write","Run","Read"];
         private string lastIdent = "";

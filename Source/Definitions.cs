@@ -22,6 +22,7 @@ namespace Automa.Source
         Identifier
     }
 
+   
     internal enum LexerType // Lexer Types
     {
         Token_LBrace, // {
@@ -45,6 +46,10 @@ namespace Automa.Source
         Token_LessThan, // <
         Token_Or, // |
         Token_And, // &
+        Token_EqualTo, // ==
+        Token_NotEqualTo, // !=
+        Token_GTE, // >=
+        Token_LTE, // <=
         Token_None // Default value;
     }
 

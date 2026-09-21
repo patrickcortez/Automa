@@ -152,14 +152,14 @@ namespace Automa.Source.Core
                             }
 
                             break;
-                        case IfBlock block:
+                        case IfBlock If:
                             prevSucc = false;
 
                             Hold = Variables.ToList(); // Hold original for comparison
 
-                            if (block.Eval(Variables))
+                            if (If.Eval(Variables))
                             {
-                                block.ExecuteBlock(Variables);
+                                If.ExecuteBlock(Variables);
                                 prevSucc = true;
                                 Compare(Variables); // compare to original
                             }

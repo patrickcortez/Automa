@@ -8,11 +8,14 @@ using System.Text;
 using System.Threading.Tasks.Dataflow;
 using static Automa.Source.Utility.Utils;
 
+using ExpOperand = (string Content, string Type);
+
 namespace Automa.Source.Core
 {
     internal class Parser(LexerToken[] LexTok,bool isdebug = false)
     {
         string[] Keywords = ["Write", "Read", "If","Elif","Else","Run"];
+        string[] LogicOps = ["||", "&&"];
 
         // Expression handling: logical or Arithmetic. Currently its Just Logical (for now)
         private Expression? ParseExpression(List<LexerToken> Tokens)
@@ -24,7 +27,11 @@ namespace Automa.Source.Core
                     throw new Exception($"Insufficient Tokens for Expression in Line: {Tokens[0].Line}");
                 }
                 Expression? expr = null;
-                string LogicOP = "", left = "", right = "";
+                string Operator = "",LogicOp="";
+
+                ExpOperand left = new(),right=new();
+
+                
                 LexerType PrevType = LexerType.Token_None;
                 if (isdebug)
                 {
@@ -43,13 +50,13 @@ namespace Automa.Source.Core
                     {
                         PrevType = CT;
 
-                        if (LogicOP.Length is 0)
+                        if (Operator.Length is 0)
                         {
-                            left = Current.GetContent();
+                            left = (Current.GetContent(), "Identifier");
                         }
                         else
                         {
-                            right = Current.GetContent();
+                            right = (Current.GetContent(), "Identifier");
                         }
 
                         continue;
@@ -63,11 +70,11 @@ namespace Automa.Source.Core
                     {
                         if (PrevType is LexerType.Token_Equal)
                         {
-                            LogicOP = "EQ";
+                            Operator = "EQ";
                         }
                         else if (PrevType is LexerType.Token_Not)
                         {
-                            LogicOP = "NEQ";
+                            Operator = "NEQ";
                         }
 
                         PrevType = CT;
@@ -76,14 +83,18 @@ namespace Automa.Source.Core
                     else if (CT is LexerType.TokenString or LexerType.TokenInt)
                     {
                         string content = Current.GetContent();
+                        string type = (CT is LexerType.TokenString) ? "String" : "Int"; 
 
-                        if (LogicOP.Length is 0)
+                        if (Operator.Length is 0)
                         {
-                            left = content;
+
+
+
+                            left = (Current.GetContent(), type);
                         }
                         else
                         {
-                            right = content;
+                            right = (Current.GetContent(), type);
                         }
 
                     }
@@ -95,13 +106,43 @@ namespace Automa.Source.Core
 
                 }
 
-                if (LogicOP == "EQ")
+                string lcontent = left.Content, rcontent = right.Content;
+
+                if (Operator == "EQ")
                 {
-                    expr = new EqualTo(new LiteralExpression(left), new LiteralExpression(right));
+
+                    EqualTo nexpr = new EqualTo(new LiteralExpression(lcontent), new LiteralExpression(rcontent));
+
+                    if(left.Type is "Identifier")
+                    {
+                        nexpr = nexpr with { Left = new VariableExpression(lcontent) };
+                    }
+
+
+                    if(right.Type is "Identifier")
+                    {
+                        nexpr = nexpr with { Right = new VariableExpression(rcontent) };
+                    }
+
+                    expr = nexpr;
+
                 }
-                else if (LogicOP == "NEQ")
+                else if (Operator == "NEQ")
                 {
-                    expr = new NotEqualTo(new LiteralExpression(left), new LiteralExpression(right));
+                    NotEqualTo nexpr = new NotEqualTo(new LiteralExpression(lcontent), new LiteralExpression(rcontent));
+
+                    if (left.Type is "Identifier")
+                    {
+                        nexpr = nexpr with { Left = new VariableExpression(lcontent) };
+                    }
+
+
+                    if (right.Type is "Identifier")
+                    {
+                        nexpr = nexpr with { Right = new VariableExpression(rcontent) };
+                    }
+
+                    expr = nexpr;
                 }
 
                 return expr;
@@ -112,6 +153,7 @@ namespace Automa.Source.Core
             }
         }
 
+        // will refactor later =P
         private T? ParseStatement<T>(LexerToken Starting,out int tokensConsumed, LexerType Ending = LexerType.Token_RBrace)
         {
             try
@@ -579,7 +621,7 @@ namespace Automa.Source.Core
 
                 if (type == typeof(IfBlock))
                 {
-                    IfBlock block = new IfBlock(expr, new());
+                    IfBlock block = new IfBlock(expr);
                     block.Body = Bob.Build();
 
                     return (T)(object)block;

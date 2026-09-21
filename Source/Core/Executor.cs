@@ -147,7 +147,7 @@ namespace Automa.Source.Core
                                 }
 
 
-                                arith.UpdateScope(Variables);
+                                arith.UpdateScope(Variables); // Update scope.
                                 break;
                             }
 
@@ -155,41 +155,13 @@ namespace Automa.Source.Core
                         case IfBlock block:
                             prevSucc = false;
 
-                            Hold = Variables.ToList();
-                            block.Variable = Variables;
+                            Hold = Variables.ToList(); // Hold original for comparison
 
-                            if (isdebug)
+                            if (block.Eval(Variables))
                             {
-                                Console.WriteLine("[Debug] Executing IFBlock instructions");
-                            }
-
-                            if (block.expression is EqualTo eq)
-                            {
-                                //Console.WriteLine("Debug: Block is a EQTO");
-                                eq.UpdateVariables(block.Variable);
-                                if (eq.Evaluate())
-                                {
-
-                                    //Console.WriteLine("Debug: Block is Executing");
-                                    
-                                    block.ExecuteBlock();
-                                    prevSucc = true;
-
-                                    Compare(Variables);
-                                }
-
-                            }else if(block.expression is NotEqualTo neq)
-                            {
-                                //Console.WriteLine("Debug: Block is a NEQTO");
-                                neq.UpdateVariables(block.Variable);
-                                if (neq.Evaluate())
-                                {
-                                    //Console.WriteLine("Debug: Block is Executing");
-                                    block.ExecuteBlock();
-                                    prevSucc = true;
-
-                                    Compare(Variables);
-                                }
+                                block.ExecuteBlock(Variables);
+                                prevSucc = true;
+                                Compare(Variables); // compare to original
                             }
 
                             break;
@@ -201,34 +173,19 @@ namespace Automa.Source.Core
                             }
 
                             Hold = Variables.ToList();
-                            elif.Variable = Variables; // update global var just incase
 
                             if (isdebug)
                             {
                                 Console.WriteLine("[Debug] Executing EliFBlock instructions");
                             }
 
-                            if (elif.expression is EqualTo EQ)
-                            {
-                                EQ.UpdateVariables(elif.Variable);
-                                if (EQ.Evaluate())
+                                if (elif.Eval(Variables))
                                 {
-                                    elif.ExecuteBlock();
+                                    elif.ExecuteBlock(Variables);
                                     Compare(Variables);
 
                                     prevSucc = true;
                                 }
-                            }else if(elif.expression is NotEqualTo NEQ)
-                            {
-                                NEQ.UpdateVariables(elif.Variable);
-                                if (NEQ.Evaluate())
-                                {
-                                    elif.ExecuteBlock();
-                                    Compare(Variables);
-
-                                    prevSucc = true;
-                                }
-                            }
 
                             break;
                         case Else els:
@@ -241,13 +198,13 @@ namespace Automa.Source.Core
                             }
 
                             Hold = Variables.ToList();
-                            els.Variable = Variables;
 
                             if (isdebug)
                             {
                                 Console.WriteLine("[Debug] Executing ElseBlock instructions");
                             }
-                            els.ExecuteBlock();
+
+                            els.ExecuteBlock(Variables);
                             prevSucc = !prevSucc;
                             Compare(Variables);
 

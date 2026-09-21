@@ -1,6 +1,8 @@
 ﻿using Automa.Source.Core;
 using Automa.Source.Utility;
+using System.Data;
 using System.Diagnostics;
+using System.Linq.Expressions;
 using System.Text;
 
 namespace Automa.Source
@@ -39,6 +41,10 @@ namespace Automa.Source
         Token_Multiply, // *
         Token_Divide, // \
         Token_KeyWord,
+        Token_GreaterThan, // >
+        Token_LessThan, // <
+        Token_Or, // |
+        Token_And, // &
         Token_None // Default value;
     }
 
@@ -57,19 +63,19 @@ namespace Automa.Source
 
         public override int Eval(IEnumerable<Variable>? Scope)
         {
-            if(Scope is null)
+            if (Scope is null)
             {
                 throw new Exception("Current Scope not Set!");
             }
 
             Variable? result = Scope.FirstOrDefault(ex => ex.name == name);
 
-            if(result == null)
+            if (result == null)
             {
                 throw new ArgumentNullException($"Variable {name} doesn't exist!");
             }
 
-            if(result.type != VariableType.Int)
+            if (result.type != VariableType.Int)
             {
                 throw new Exception($"Variable {name} is not an integer!");
             }
@@ -99,7 +105,7 @@ namespace Automa.Source
         public LexerType TokenType { get; set; }
         public readonly int Line { get; }
 
-        public LexerToken(LexerType _Type,int _Line,string _Content="") // Constructor
+        public LexerToken(LexerType _Type, int _Line, string _Content = "") // Constructor
         {
             Content.Append(_Content);
             TokenType = _Type;
@@ -109,7 +115,7 @@ namespace Automa.Source
         public void Append(string NewContent)
         {
 
-            if(NewContent.Length == 0)
+            if (NewContent.Length == 0)
             {
                 return;
             }
@@ -143,13 +149,13 @@ namespace Automa.Source
 
     internal record VariableAssign(Variable variable) : AssignType;
     // Instructions
-    internal record WriteInstruction(string Content,bool isIdent = false) : Instruction;
+    internal record WriteInstruction(string Content, bool isIdent = false) : Instruction;
 
-    internal record ReadAssign(string target,string Prompt) : AssignType;
+    internal record ReadAssign(string target, string Prompt) : AssignType;
 
     internal record AssignInstruction(AssignType type) : Instruction;
-     
-    internal record ArithmeticAssign(ArithmeticNode node,string target) : AssignType
+
+    internal record ArithmeticAssign(ArithmeticNode node, string target) : AssignType
     {
         public void UpdateScope(List<Variable> Scope)
         {
@@ -175,12 +181,12 @@ namespace Automa.Source
         }
     }
 
-    internal record Variable(string _name, string _value,VariableType _type = VariableType.String)
+    internal record Variable(string _name, string _value, VariableType _type = VariableType.String)
     {
-       public string name { get; set; } = _name;
-       public string value { get; set; } = _value;
+        public string name { get; set; } = _name;
+        public string value { get; set; } = _value;
 
-       public VariableType type = _type;
+        public VariableType type = _type;
     }
 
     internal abstract record Block : Instruction
@@ -188,7 +194,7 @@ namespace Automa.Source
         public Instruction? Body { get; set; } = null;
     }
 
-    
+
 
     internal record WhileBlock(Expression expr) : Block // While( expr ) { }
     {
@@ -199,50 +205,96 @@ namespace Automa.Source
 
     }
 
-    internal record IfBlock(Expression expression, List<Variable> Variables) : Block // if(condition)
+    internal record IfBlock(LogOp expression) : Block // if(condition)
     {
 
-        public List<Variable> Variable { get; set; } = Variables;
-
-       
-
-        public int ExecuteBlock()
+        public bool Eval(List<Variable> Scope) => expression switch
         {
-            Executor executor = new(Body, this.Variable); // replace new with Dody later...
+            LogicalUnit single => single.Eval(Scope),
+            Or or => or.Eval(Scope),
+            And and => and.Eval(Scope),
+            _ => false
+        };
 
-            return  executor.Start();
-        }
-    }
-
-    internal record Elif(Expression expression, List<Variable> Variables) : Block // elif(<condition>)
-    {
-
-        public List<Variable> Variable { get; set; } = Variables;
-
-        public int ExecuteBlock()
+        public int ExecuteBlock(List<Variable> Scope)
         {
-            Executor executor = new(Body, this.Variable); // replace new with Body Later...
+            Executor executor = new(Body, Scope); // replace new with Dody later...
 
-            return  executor.Start();
-        }
-    }
-
-    internal record Else( List<Variable> Variables) : Block
-    {
-
-        public List<Variable> Variable { get; set; } = Variables;
-        public int ExecuteBlock()
-        {
-            Executor executor = new(Body, this.Variable);
             return executor.Start();
         }
     }
 
-    // Expressions
+    internal record Elif(LogOp expression) : Block // elif(<condition>)
+    {
 
-    internal abstract record Expression(); // Soon to be added: >,<,>= and <=
+        public bool Eval(List<Variable> Scope) => expression switch
+        {
+            LogicalUnit single => single.Eval(Scope),
+            Or or => or.Eval(Scope),
+            And and => and.Eval(Scope),
+            _ => false
+        };
 
-    internal record VariableExpression(string VariableName) : Expression
+        public int ExecuteBlock(List<Variable> Scope)
+        {
+            Executor executor = new(Body, Scope); // replace new with Dody later...
+
+            return executor.Start();
+        }
+    }
+
+    internal record Else : Block
+    {
+        public int ExecuteBlock(List<Variable> Scope)
+        {
+            Executor executor = new(Body, Scope);
+            return executor.Start();
+        }
+    }
+
+    // Logical Operators
+
+    internal abstract record LogOp
+    {
+        public abstract bool Eval(List<Variable> Scope);
+    }
+
+    internal record LogicalUnit(Expression Node) : LogOp
+    {
+        public override bool Eval(List<Variable> Scope)
+        {
+            bool Result = Node switch
+            {
+                EqualTo eq => eq.Evaluate(Scope),
+                NotEqualTo neq => neq.Evaluate(Scope),
+                _ => false
+            };
+
+            return Result;
+        }
+    }
+
+    internal record And(LogOp Left, LogOp Right, LogOp? next = null) : LogOp
+    {
+
+        public override bool Eval(List<Variable> Scope) => Left.Eval(Scope) && Right.Eval(Scope);
+    }
+
+    internal record Or(LogOp Left, LogOp Right, LogOp? next = null) : LogOp
+    {
+        public override bool Eval(List<Variable> Scope) => Left.Eval(Scope) || Right.Eval(Scope);
+    }
+
+
+
+    // Operands
+
+    internal abstract record Operand
+    {
+        public abstract string Eval(List<Variable> Scope);
+    }
+
+    internal record VariableExpression(string VariableName) : Operand
     {
         private Variable? Value { get; set; }
 
@@ -251,102 +303,87 @@ namespace Automa.Source
             Value = Utils.FindVariable(VariableName, Variables);
             return Value;
         }
-    }
 
-    internal record LiteralExpression(string value) : Expression
-    {
-        public string Value { get; set; } = value;// well only have string data types anyways =P, so i dont have to cast later
-    }
-
-    internal record EqualTo(Expression left,Expression right) : Expression
-    {
-        private List<Variable> Variables = new();
-
-        public void UpdateVariables(List<Variable> Updated)
+        public override string Eval(List<Variable> Scope)
         {
-            Variables = Updated;
-        }
-
-        public bool Evaluate()
-        {
+            Variable? Result = Scope.FirstOrDefault(ex => ex.name == VariableName);
 
 
-            if(left is LiteralExpression LitLeft)
+            if(Result is null)
             {
-                if(right is LiteralExpression LitRight)
-                {
-                    Variable? FindLeft = Utils.FindVariable(LitLeft.value, Variables);
-                    Variable? FindRight = Utils.FindVariable(LitRight.value, Variables);
-
-                    //Console.WriteLine("[Debug] Left value: {0} , Right value: {1}", FindLeft.value ?? LitLeft.value, FindRight.value ?? LitRight.value);
-
-                    if (FindLeft != null && FindRight != null)
-                    {
-                        return FindLeft.value == FindRight.value;
-                    }else if(FindLeft != null)
-                    {
-                        return FindLeft.value == LitRight.value;
-                    }else if(FindRight != null)
-                    {
-                        return LitLeft.Value == FindRight.value;
-                    }
-                    else
-                    {
-                        return  LitLeft.value == LitRight.value;
-                    }
-                }
+                throw new Exception($"{VariableName} is not in current scope");
             }
 
-            throw new Exception("Unknown Expression used!");
+            return Result.value;
         }
     }
 
-    internal record NotEqualTo(Expression left, Expression right) : Expression
+    internal record LiteralExpression(string value) : Operand
+    {
+        public override string Eval(List<Variable> Scope)
+        {
+            return value;
+        }
+    }
+
+
+    // Expressions
+
+    internal abstract record Expression() // Soon to be added: >,<,>= and <=
+    {
+        public abstract bool Evaluate(List<Variable> Variables);
+    }
+
+
+    internal record EqualTo(Operand Left,Operand Right) : Expression
     {
 
-        private List<Variable> Variables = new();
 
-        public void UpdateVariables(List<Variable> Updated)
+        public override bool Evaluate(List<Variable> Variables)
         {
-            Variables = Updated;
-        }
-
-
-        public bool Evaluate()
-        {
-            // Console.WriteLine("Debug: Left Type: {0} , Right Type: {1}", left.GetType(), right.GetType());
-
-            if (left is LiteralExpression LitLeft)
+            string Lval = Left switch
             {
-                if (right is LiteralExpression LitRight)
-                {
-                    Variable? FindLeft = Utils.FindVariable(LitLeft.value, Variables);
-                    Variable? FindRight = Utils.FindVariable(LitRight.value, Variables);
+                LiteralExpression lexpr => lexpr.value,
+                VariableExpression lexpr => lexpr.Eval(Variables),
+                _ => ""
+            };
 
-                    if (FindLeft != null && FindRight != null)
-                    {
-                        return FindLeft.value != FindRight.value;
-                    }
-                    else if (FindLeft != null)
-                    {
-                        return FindLeft.value != LitRight.value;
-                    }
-                    else if (FindRight != null)
-                    {
-                        return LitLeft.Value != FindRight.value;
-                    }
-                    else
-                    {
-                        return LitLeft.value != LitRight.value;
-                    }
-                }
-            }
+            string Rval = Right switch
+            {
+                LiteralExpression rexpr => rexpr.value,
+                VariableExpression rexpr => rexpr.Eval(Variables),
+                _ => ""
+            };
 
-            throw new Exception("Unknown Expression used!");
+            return Lval == Rval;
         }
-    
+        
+    }
 
-}
+    internal record NotEqualTo(Operand Left, Operand Right) : Expression
+    {
+
+        public override bool Evaluate(List<Variable> Variables)
+        {
+            string Lval = Left switch
+            {
+                LiteralExpression lexpr => lexpr.value,
+                VariableExpression lexpr => lexpr.Eval(Variables),
+                _ => ""
+            };
+
+            string Rval = Right switch
+            {
+                LiteralExpression rexpr => rexpr.value,
+                VariableExpression rexpr => rexpr.Eval(Variables),
+                _ => ""
+            };
+
+            return Lval == Rval;
+        }
+
+
+    }
 
     //Processes
 

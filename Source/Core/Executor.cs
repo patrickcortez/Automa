@@ -1,4 +1,5 @@
-﻿using static Automa.Source.Utility.Utils;
+﻿using Automa.Source.Utility;
+using static Automa.Source.Utility.Utils;
 
 namespace Automa.Source.Core
 {
@@ -6,13 +7,18 @@ namespace Automa.Source.Core
     internal class Executor(Instruction Current, List<Variable>? Variables = null)
     {
 
-        public int Start(bool isdebug = false)
+        public int Start(bool isdebug = false,List<Variable>? Arguments=null,List<Variable>? Outer=null)
         {
             try
             {
                 if(Variables is null) // instantiate once null
                 {
                     Variables = new();
+                }
+
+                if(Arguments is not null)
+                {
+                    Variables.AddRange(Arguments);
                 }
 
                 bool prevSucc = false;
@@ -58,6 +64,8 @@ namespace Automa.Source.Core
                                 {
                                     Console.WriteLine("Variable assignment type");
                                 }
+
+                                // will be moved to VariableAssign's Evaluate()
 
                                 Variable newVariable = var.variable;
                                 Variable? findVariable = FindVariable(newVariable.name,Variables);
@@ -151,6 +159,15 @@ namespace Automa.Source.Core
 
                                 arith.UpdateScope(Variables); // Update scope.
                                 break;
+                            }else if(assignment.type is UnaryAssign UA)
+                            {
+                                if (isdebug)
+                                {
+                                    Console.WriteLine("Unary Assign");
+                                }
+
+                                UA.UpdateScope(Variables);
+                                break;
                             }
 
                             break;
@@ -222,6 +239,11 @@ namespace Automa.Source.Core
                             }
 
                             Compare(Variables);
+                            break;
+                        case FunctionCall fc:
+
+                            
+
                             break;
                         default:
                             break;

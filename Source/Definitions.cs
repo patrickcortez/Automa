@@ -3,6 +3,8 @@ using Automa.Source.Utility;
 using System.Data;
 using System.Diagnostics;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Automa.Source
@@ -16,10 +18,12 @@ namespace Automa.Source
 
     internal enum VariableType
     {
-        String,
-        Int,
+        String, // "ABCdef..."
+        Int, // 1,2,3,...
+        Boolean, // true or false
+        Dynamic, // for Arguments
 
-        Identifier
+        Identifier // var,num
     }
 
    
@@ -52,7 +56,10 @@ namespace Automa.Source
         Token_LTE, // <=
         Token_Pipe, // |
         Token_Ampersand, // &
+        Token_Increment, // ++
+        Token_Decrement, // --
         Token_None // Default value;
+
     }
 
     //--- for arithmetic parser
@@ -136,15 +143,17 @@ namespace Automa.Source
         }
     }
 
-    internal enum AssignmentType
-    {
-        Variable,
-        Run,
-        Read
-    }
 
     // Print Configuration definition
     internal record PrintConfiguration(PrintOptions option, bool newline);
+
+    // Unary Assign type:
+
+    enum UnaryKind
+    {
+        Increment,
+        Decrement
+    }
 
     // Assigns
 
@@ -154,11 +163,43 @@ namespace Automa.Source
     }
     internal abstract record AssignType;
 
-    internal record VariableAssign(Variable variable) : AssignType;
+    internal record VariableAssign(Variable variable) : AssignType; //for exit code
     // Instructions
     internal record WriteInstruction(string Content, bool isIdent = false) : Instruction;
 
-    internal record ReadAssign(string target, string Prompt) : AssignType;
+    internal record ReadAssign(string target, string Prompt) : AssignType; //
+
+    internal record UnaryAssign(string target,UnaryKind kind): AssignType
+    {
+        public void UpdateScope(List<Variable> Scope)
+        {
+            Variable? Result = Scope.FirstOrDefault();
+
+            if(Result is null)
+            {
+                return;
+            }
+
+            if(Result.type is not VariableType.Int)
+            {
+                return;
+            }
+
+            int res = int.Parse(Result.value);
+
+            if(kind is UnaryKind.Increment)
+            {
+                res++;
+            }
+            else
+            {
+                res--;
+            }
+
+            Result = Result with { value = res.ToString() };
+            return;
+        }
+    }
 
     internal record AssignInstruction(AssignType type) : Instruction;
 
@@ -185,6 +226,7 @@ namespace Automa.Source
             Result.value = val.ToString();
             Result.type = VariableType.Int;
 
+            return;
         }
     }
 
@@ -289,7 +331,7 @@ namespace Automa.Source
         public abstract bool Eval(List<Variable> Scope);
     }
 
-    internal record LogicalUnit(Expression Node) : LogOp
+    internal record LogicalUnit(Expression<bool> Node) : LogOp
     {
         public override bool Eval(List<Variable> Scope)
         {
@@ -354,13 +396,13 @@ namespace Automa.Source
 
     // Expressions
 
-    internal abstract record Expression() // Soon to be added: >,<,>= and <=
+    internal abstract record Expression<T> // Soon to be added: >,<,>= and <=
     {
-        public abstract bool Evaluate(List<Variable> Variables);
+        public abstract T Evaluate(List<Variable> Variables);
     }
 
 
-    internal record EqualTo(Operand Left,Operand Right) : Expression
+    internal record EqualTo(Operand Left,Operand Right) : Expression<bool>
     {
 
 
@@ -385,7 +427,7 @@ namespace Automa.Source
         
     }
 
-    internal record NotEqualTo(Operand Left, Operand Right) : Expression
+    internal record NotEqualTo(Operand Left, Operand Right) : Expression<bool>
     {
 
         public override bool Evaluate(List<Variable> Variables)
@@ -410,7 +452,7 @@ namespace Automa.Source
 
     }
 
-    internal record GreaterThan(Operand Left, Operand Right) : Expression
+    internal record GreaterThan(Operand Left, Operand Right) : Expression<bool>
     {
         public override bool Evaluate(List<Variable> Variables)
         {
@@ -443,7 +485,7 @@ namespace Automa.Source
         }
     }
 
-    internal record LessThan(Operand Left, Operand Right) : Expression
+    internal record LessThan(Operand Left, Operand Right) : Expression<bool>
     {
         public override bool Evaluate(List<Variable> Variables)
         {
@@ -476,7 +518,7 @@ namespace Automa.Source
         }
     }
 
-    internal record GTE(Operand Left, Operand Right) : Expression
+    internal record GTE(Operand Left, Operand Right) : Expression<bool>
     {
         public override bool Evaluate(List<Variable> Variables)
         {
@@ -509,7 +551,7 @@ namespace Automa.Source
         }
     }
 
-    internal record LTE(Operand Left, Operand Right) : Expression
+    internal record LTE(Operand Left, Operand Right) : Expression<bool>
     {
         public override bool Evaluate(List<Variable> Variables)
         {
@@ -590,6 +632,60 @@ namespace Automa.Source
             return "1";
         }
     }
+
+    // Function
+
+    internal record Return(string value, VariableType type);
+
+    internal record Function(string name,Return returnVal,List<Variable> Args) : Block
+    {
+        public int ExecuteBlock(List<Parameter> Param,List<Variable> Scope)
+        {
+            int pos = 0;
+            foreach(var par in Param) // parse parameters
+            {
+                VariableType CT = par.type;
+
+                switch (CT)
+                {
+                    case VariableType.Int:
+                    case VariableType.Boolean:
+                    case VariableType.String:
+
+                        Args[pos] = Args[pos] with { _type = CT,value = par.value };
+                        break;
+                    case VariableType.Identifier:
+                        Variable? Result = Scope.FirstOrDefault(ex => ex.name == par.value);
+
+                        Args[pos] = Args[pos] with { _type = Result.type, value = Result.value };
+
+                        break;
+
+                }
+
+                pos++;
+            }
+
+            Executor execute = new(Body);
+
+            return execute.Start(false,Args,Scope);
+        }
+
+        
+    }
+
+    // functions are for assignment only or lone function calls. making it work with arith, boolean expr and assign takes a massive rewrite.
+    // maybe in the future, when i feel like it, i'll refactor.
+    internal record FunctionCall(List<Parameter> param,string name,string target = "") : Instruction 
+    {
+        public int CallFunction(List<Variable> Scope)
+        {
+            
+            return FunctionCache.RunFunc(name,param,Scope);
+        }
+    }
+
+    internal record Parameter(string value, VariableType type);
 
 }
 

@@ -25,7 +25,7 @@ namespace Automa.Source.Core
          // Lex: ==,!=,>= and <=
          // properly parse Comparators and remove toggling.
 
-        private string[] keyWords = ["If", "Elif","Else","Write","Run","Read","While"];
+        private string[] keyWords = ["If", "Elif","Else","Write","Run","Read","While","Function","True","False"];
         private string lastIdent = "";
 
         private LexerToken[]? Tokenize() // Lexer & Tokenizer
@@ -231,9 +231,9 @@ namespace Automa.Source.Core
                             else if (c is '=')
                             {
 
-                                if(Back is not ' ') // Comparator guard-clause
+                                if (Back is not ' ') // Comparator guard-clause
                                 {
-                                    if(Back is '=' or '>' or '<' or '!')
+                                    if (Back is '=' or '>' or '<' or '!')
                                     {
                                         continue;
                                     }
@@ -264,19 +264,13 @@ namespace Automa.Source.Core
                             }
                             else if (c is '+')
                             {
-                                if(Value.Length is not 0)
-                                {
-                                    string Val = Value.ToString();
 
-                                    Tokens.Add(new(LexerType.TokenInt, LineNo, Val));
-                                    Value.Clear();
+                                if (Back is '+')
+                                {
+                                    continue;
                                 }
 
-                                Tokens.Add(new(LexerType.Token_Add, LineNo));
-                                continue;
-                            }
-                            else if (c is '-')
-                            {
+                                bool isIncrement = Peek is '+';
 
                                 if (Value.Length is not 0)
                                 {
@@ -286,9 +280,31 @@ namespace Automa.Source.Core
                                     Value.Clear();
                                 }
 
-                                Tokens.Add(new(LexerType.Token_Minus, LineNo));
+
+                                Tokens.Add(new((isIncrement) ? LexerType.Token_Increment : LexerType.Token_Add, LineNo));
                                 continue;
-                            }else if(c is '!')
+                            }
+                            else if (c is '-')
+                            {
+                                if (Back is '-')
+                                {
+                                    continue;
+                                }
+
+                                bool isDecrement = Peek is '-';
+
+                                if (Value.Length is not 0)
+                                {
+                                    string Val = Value.ToString();
+
+                                    Tokens.Add(new(LexerType.TokenInt, LineNo, Val));
+                                    Value.Clear();
+                                }
+
+                                Tokens.Add(new((isDecrement) ? LexerType.Token_Decrement : LexerType.Token_Minus, LineNo));
+                                continue;
+                            }
+                            else if (c is '!')
                             {
 
                                 bool isCompare = Peek == '=';
@@ -305,7 +321,7 @@ namespace Automa.Source.Core
                                 {
                                     Tokens.Add(new(LexerType.Token_NotEqualTo, LineNo));
                                 }
-                                else if(Peek is not '=' and not ' ')
+                                else if (Peek is not '=' and not ' ')
                                 {
                                     Tokens.Add(new(LexerType.Token_Not, LineNo));
                                 }
@@ -315,7 +331,8 @@ namespace Automa.Source.Core
                                 }
 
                                 continue;
-                            }else if( c is '*')
+                            }
+                            else if (c is '*')
                             {
 
                                 if (Value.Length is not 0)
@@ -328,7 +345,8 @@ namespace Automa.Source.Core
 
                                 Tokens.Add(new LexerToken(LexerType.Token_Multiply, LineNo));
                                 continue;
-                            }else if(c is '/') // divide
+                            }
+                            else if (c is '/') // divide
                             {
 
                                 if (Value.Length is not 0)
@@ -341,7 +359,7 @@ namespace Automa.Source.Core
 
                                 Tokens.Add(new LexerToken(LexerType.Token_Divide, LineNo));
                             }
-                            else if(c is '>') // greater than
+                            else if (c is '>') // greater than
                             {
 
                                 if (Back is '=')
@@ -351,7 +369,7 @@ namespace Automa.Source.Core
 
                                 bool isGreater = Peek == '=';
 
-                                if(Value.Length > 0)
+                                if (Value.Length > 0)
                                 {
                                     Flush();
                                 }
@@ -360,10 +378,10 @@ namespace Automa.Source.Core
                                 continue;
 
                             }
-                            else if(c is '<') // less than
+                            else if (c is '<') // less than
                             {
 
-                                if(Back is '=')
+                                if (Back is '=')
                                 {
                                     throw new Exception($"Invalid operation at line: {LineNo}");
                                 }
@@ -381,14 +399,14 @@ namespace Automa.Source.Core
                                 continue;
 
                             }
-                            else if(c is '|')
+                            else if (c is '|')
                             {
-                                if(Back is '|')
+                                if (Back is '|')
                                 {
                                     continue;
                                 }
 
-                                if(Value.Length > 0)
+                                if (Value.Length > 0)
                                 {
                                     Flush();
                                 }
@@ -396,21 +414,27 @@ namespace Automa.Source.Core
                                 bool isLogicalOp = Peek == '|';
 
                                 Tokens.Add(new(isLogicalOp ? LexerType.Token_Or : LexerType.Token_Pipe, LineNo));
-                            }else if(c is '&')
+                            }
+                            else if (c is '&')
                             {
-                                if(Back is '&')
+                                if (Back is '&')
                                 {
                                     continue;
                                 }
 
                                 bool isLogicalOp = Peek == '&';
 
-                                if(Value.Length > 0)
+                                if (Value.Length > 0)
                                 {
                                     Flush();
                                 }
 
                                 Tokens.Add(new(isLogicalOp ? LexerType.Token_And : LexerType.Token_Ampersand, LineNo));
+                                continue;
+                            }
+                            else if(c is ',')
+                            {
+                                Tokens.Add(new(LexerType.Token_Comma, LineNo));
                                 continue;
                             }
                         }

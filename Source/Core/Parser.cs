@@ -364,8 +364,7 @@ namespace Automa.Source.Core
 
                 bool isArith = false;
 
-                string CurrentInstruction = "",
-                        CurrentBlock = "";
+                string CurrentInstruction = "";
                 (string value, string type) CurrentContent = ("","");
 
                 List<LexerToken> Toks = LexTok.Skip(StartingIndex).ToList();
@@ -451,7 +450,6 @@ namespace Automa.Source.Core
 
                             if (!inBlock)
                             {
-                                CurrentBlock = keyword;
                                 inBlock = true;
                                 continue;
                             }
@@ -479,7 +477,11 @@ namespace Automa.Source.Core
 
                                     Bob.AddNode(parsedBlock);
 
-                                    if (skip > 0) i += (skip - 1);
+                                    if (skip > 0)
+                                    {
+                                        i += (skip - 1);
+                                        tc += (skip - 1);
+                                    }
                                 }else if(keyword is "Elif")
                                 {
                                     Block? parsedBlock = ParseStatement<Elif>(Current, out int skip);
@@ -496,7 +498,11 @@ namespace Automa.Source.Core
 
                                     Bob.AddNode(parsedBlock);
 
-                                    if (skip > 0) i += (skip - 1);
+                                    if (skip > 0)
+                                    {
+                                        i += (skip - 1);
+                                        tc += (skip - 1);
+                                    }
                                 }
                                 else if(keyword is "Else")
                                 {
@@ -509,7 +515,11 @@ namespace Automa.Source.Core
 
                                     Bob.AddNode(parsedBlock);
 
-                                    if (skip > 0) i += (skip - 1);
+                                    if (skip > 0)
+                                    {
+                                        i += (skip - 1);
+                                        tc += (skip - 1);
+                                    }
                                 }
 
                                 continue;
@@ -517,10 +527,28 @@ namespace Automa.Source.Core
 
                         }else if(keyword is "While")
                         {
-                            CurrentBlock = "While";
-                            inBlock = true;
+                            if (!inBlock)
+                            {
+                                inBlock = true;
+                                continue;
+                            }
+                            else
+                            {
+                                Block? parsedBlock = ParseStatement<WhileBlock>(Current, out int skip);
 
-                            continue;
+                                if (parsedBlock is null)
+                                {
+                                    throw new Exception($"Malformed block at line: {Current.Line}");
+                                }
+
+                                Bob.AddNode(parsedBlock);
+
+                                if (skip > 0)
+                                {
+                                    i += (skip - 1);
+                                    tc += (skip - 1);
+                                }
+                            }
 
                         }
 
@@ -1045,7 +1073,7 @@ namespace Automa.Source.Core
                         {
                             if (inBlock && depth is 1)
                             {
-                                NodeBuilder.AddNode(ParseStatement<WhileBlock>(Current, out int tokenConsumed));
+                                NodeBuilder.AddNode(ParseStatement<WhileBlock>(Current, out int tokenConsumed),true);
 
                                 if (isdebug)
                                 {

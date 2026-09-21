@@ -76,15 +76,17 @@ namespace Automa.Source.Core
                                     Variables[vIndex].value = newVariable.value;
                                     break;
                                 }
+
+                                Variable declared = new(newVariable.name, newVariable.value, newVariable.type);
                                 
                                 if(FindValue is not null)
                                 {
                                     int vIndex = Variables.IndexOf(FindValue);
 
-                                    newVariable.value = Variables[vIndex].value;
+                                    declared.value = Variables[vIndex].value;
                                 }
 
-                                Variables.Add(newVariable);
+                                Variables.Add(declared);
                                 break;
                             }else if(assignment.type is ReadAssign read)
                             {

@@ -270,12 +270,7 @@ namespace Automa.Source
     {
         public override bool Eval(List<Variable> Scope)
         {
-            bool Result = Node switch
-            {
-                EqualTo eq => eq.Evaluate(Scope),
-                NotEqualTo neq => neq.Evaluate(Scope),
-                _ => false
-            };
+            bool Result = Node.Evaluate(Scope);
 
             return Result;
         }
@@ -386,7 +381,7 @@ namespace Automa.Source
                 _ => ""
             };
 
-            return Lval == Rval;
+            return Lval != Rval;
         }
 
 

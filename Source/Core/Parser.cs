@@ -22,10 +22,7 @@ namespace Automa.Source.Core
         {
             try
             {
-                if(Tokens.Count < 4)
-                {
-                    throw new Exception($"Insufficient Tokens for Expression in Line: {Tokens[0].Line}");
-                }
+
                 LogOp? expr = null;
 
                 bool hasLogicalOps = false;

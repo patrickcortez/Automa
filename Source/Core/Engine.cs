@@ -53,6 +53,18 @@ namespace Automa.Source.Core
                     }
 
                     StringBuilder Value = new(),identifier = new();
+
+                    void Flush()
+                    {
+                        if(Value.Length > 0)
+                        {
+                            string value = Value.ToString();
+                            Tokens.Add(new((int.TryParse(value, out _) ? LexerType.TokenInt : LexerType.TokenString ),LineNo));
+                            Value.Clear();
+
+                        }
+                    }
+
                     bool isInQoutes = false;
 
                     if (isdebug)
@@ -75,7 +87,7 @@ namespace Automa.Source.Core
                             Peek = line[next];
                         }
 
-                        if(prev > 0)
+                        if(prev >= 0)
                         {
                             Back = line[prev];
                         }
@@ -218,15 +230,6 @@ namespace Automa.Source.Core
                             }
                             else if (c is '=')
                             {
-                                if (Value.Length > 0)
-                                {
-                                    if (int.TryParse(Value.ToString(), out int val)) // make sure the left side is not a string or int literal
-                                    {
-                                        throw new Exception("Cannot assign a value to a integer literal");
-                                    }
-
-                                    throw new Exception("Cannot assign a value to a string literal");
-                                }
 
                                 if(Back is not ' ') // Comparator guard-clause
                                 {
@@ -236,21 +239,27 @@ namespace Automa.Source.Core
                                     }
                                 }
 
-                                if (Peek is not ' ') // equalto identifier
+                                bool iscompare = Peek == '=';
+
+                                if (Value.Length > 0)
                                 {
-                                    if(Peek == '=')
+
+                                    if (!iscompare)
                                     {
-                                        Tokens.Add(new(LexerType.Token_EqualTo, LineNo));
-                                    }
-                                    else
-                                    {
-                                        Tokens.Add(new(LexerType.Token_Equal, LineNo));
+                                        if (int.TryParse(Value.ToString(), out int val)) // make sure the left side is not a string or int literal
+                                        {
+                                            throw new Exception("Cannot assign a value to a integer literal");
+                                        }
+
+                                        throw new Exception("Cannot assign a value to a string literal");
                                     }
 
-                                    continue;
+                                    Flush();
                                 }
 
-                                Tokens.Add(new(LexerType.Token_Equal, LineNo));
+
+
+                                Tokens.Add(new(iscompare ? LexerType.Token_EqualTo : LexerType.Token_Equal, LineNo));
                                 continue;
                             }
                             else if (c is '+')
@@ -281,6 +290,8 @@ namespace Automa.Source.Core
                                 continue;
                             }else if(c is '!')
                             {
+
+                                bool isCompare = Peek == '=';
 
                                 if (Value.Length is not 0)
                                 {
@@ -333,65 +344,73 @@ namespace Automa.Source.Core
                             else if(c is '>') // greater than
                             {
 
-                                if(Peek is '=' and not ' ')
+                                if (Back is '=')
                                 {
-                                    Tokens.Add(new(LexerType.Token_GTE, LineNo));
-                                }else if(Peek is not '=' and not ' ')
-                                {
-                                    Tokens.Add(new(LexerType.Token_GreaterThan, LineNo));
-                                }
-                                else
-                                {
-                                    throw new Exception($"Missing tokens at {LineNo}");
+                                    throw new Exception($"Invalid operation at line: {LineNo}, Lambda operator not implemented.");
                                 }
 
+                                bool isGreater = Peek == '=';
+
+                                if(Value.Length > 0)
+                                {
+                                    Flush();
+                                }
+
+                                Tokens.Add(new(isGreater ? LexerType.Token_GTE : LexerType.Token_GreaterThan, LineNo));
                                 continue;
 
                             }
                             else if(c is '<') // less than
                             {
-                                if (Peek is '=' and not ' ')
+
+                                if(Back is '=')
                                 {
-                                    Tokens.Add(new(LexerType.Token_LTE, LineNo));
-                                }
-                                else if (Peek is not '=' and not ' ')
-                                {
-                                    Tokens.Add(new(LexerType.Token_LessThan, LineNo));
-                                }
-                                else
-                                {
-                                    throw new Exception($"Missing tokens at {LineNo}");
+                                    throw new Exception($"Invalid operation at line: {LineNo}");
                                 }
 
-                            }else if(c is '|')
-                            {
-                                if(Peek is '|' and not ' ' && Back is not '|')
+                                bool isLesser = Peek == '=';
+
+
+
+                                if (Value.Length > 0)
                                 {
-                                    Tokens.Add(new(LexerType.Token_Or, LineNo));
-                                }else if(Peek is not '|' and not ' ' && Back is not '|')
-                                {
-                                    Tokens.Add(new(LexerType.Token_Pipe, LineNo));
+                                    Flush();
                                 }
-                                else
+
+                                Tokens.Add(new(isLesser ? LexerType.Token_LTE : LexerType.Token_LessThan, LineNo));
+                                continue;
+
+                            }
+                            else if(c is '|')
+                            {
+                                if(Back is '|')
                                 {
                                     continue;
                                 }
+
+                                if(Value.Length > 0)
+                                {
+                                    Flush();
+                                }
+
+                                bool isLogicalOp = Peek == '|';
+
+                                Tokens.Add(new(isLogicalOp ? LexerType.Token_Or : LexerType.Token_Pipe, LineNo));
                             }else if(c is '&')
                             {
-
-                                if(Peek is '&' and not ' ' && Back is not '&')
-                                {
-                                    Tokens.Add(new(LexerType.Token_And, LineNo));
-                                }
-                                else if(Peek is not '&' and not ' ' && Back is '&')
+                                if(Back is '&')
                                 {
                                     continue;
                                 }
-                                else if(Peek is not '&' and not ' ' && Back is not '&')
+
+                                bool isLogicalOp = Peek == '&';
+
+                                if(Value.Length > 0)
                                 {
-                                    Tokens.Add(new(LexerType.Token_Ampersand, LineNo));
+                                    Flush();
                                 }
 
+                                Tokens.Add(new(isLogicalOp ? LexerType.Token_And : LexerType.Token_Ampersand, LineNo));
                                 continue;
                             }
                         }

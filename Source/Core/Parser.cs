@@ -55,6 +55,8 @@ namespace Automa.Source.Core
                         Console.Write(", {0} ,", CT.ToString());
                     }
 
+
+
                     if (CT is LexerType.Token_Identifier)
                     {
                         PrevType = CT;
@@ -126,7 +128,11 @@ namespace Automa.Source.Core
                 }
 
                 string lcontent = left.Content, rcontent = right.Content;
-                
+
+                if (Operator.Length is 0)
+                {
+                    throw new Exception("Missing Operator, must have an operator!");
+                }
 
                 if (Operator == "EQ")
                 {

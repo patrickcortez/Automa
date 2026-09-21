@@ -59,7 +59,7 @@ namespace Automa.Source.Core
                         if(Value.Length > 0)
                         {
                             string value = Value.ToString();
-                            Tokens.Add(new((int.TryParse(value, out _) ? LexerType.TokenInt : LexerType.TokenString ),LineNo));
+                            Tokens.Add(new((int.TryParse(value, out _) ? LexerType.TokenInt : LexerType.TokenString ),LineNo,value));
                             Value.Clear();
 
                         }

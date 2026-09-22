@@ -15,16 +15,23 @@ namespace Automa.Source.Utility
             Functions.Add(func);
         }
 
-        public static int RunFunc(string name,List<Parameter> param,List<Variable> Scope)
+        public static string RunFunc(string name,List<Parameter> param,List<Variable> Scope)
         {
             Function? result = Functions.FirstOrDefault(ex => ex.name == name);
 
             if(result is null)
             {
-                return 1;
+                return "NAN";
             }
 
-            return result.ExecuteBlock(param,Scope);
+            int exitc=result.ExecuteBlock(param,Scope);
+
+            if(exitc is not 1)
+            {
+                return "NAN";
+            }
+
+            return "";
         }
 
     }

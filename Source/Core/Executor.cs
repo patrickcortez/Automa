@@ -77,11 +77,11 @@ namespace Automa.Source.Core
 
                                     if(FindValue is not null)
                                     {
-                                        Variables[vIndex].value = FindValue.value;
+                                        Variables[vIndex] = Variables[vIndex] with { value = FindValue.value };
                                         break;
                                     }
 
-                                    Variables[vIndex].value = newVariable.value;
+                                    Variables[vIndex]= Variables[vIndex] with { value = newVariable.value };
                                     break;
                                 }
 
@@ -91,7 +91,7 @@ namespace Automa.Source.Core
                                 {
                                     int vIndex = Variables.IndexOf(FindValue);
 
-                                    declared.value = Variables[vIndex].value;
+                                    declared = declared with { value = Variables[vIndex].value };
                                 }
 
                                 Variables.Add(declared);
@@ -115,7 +115,7 @@ namespace Automa.Source.Core
                                 {
                                     int vIndex = Variables.IndexOf(findVariable);
 
-                                    Variables[vIndex].value = Input(read.Prompt) ?? "";
+                                    Variables[vIndex] = Variables[vIndex] with { value = Input(read.Prompt) ?? ""};
                                     break;
                                 }
 
@@ -141,7 +141,7 @@ namespace Automa.Source.Core
                                 if(findVariable is not null)
                                 {
                                     int vIndex = Variables.IndexOf(findVariable);
-                                    Variables[vIndex].value = run.Run();
+                                    Variables[vIndex] = Variables[vIndex] with { value = run.Run() };
                                     break;
                                 }
 
@@ -242,7 +242,12 @@ namespace Automa.Source.Core
                             break;
                         case FunctionCall fc:
 
-                            
+                            Variable? target = Variables.FirstOrDefault(ex => ex.name == fc.target);
+
+                            if(target is null)
+                            {
+                                 // target = new(fc.target)
+                            }
 
                             break;
                         default:

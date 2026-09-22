@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection.Metadata;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks.Dataflow;
 using System.Transactions;
@@ -56,7 +57,23 @@ namespace Automa.Source.Core
                         Console.Write(", {0} ,", CT.ToString());
                     }
 
+                    if(CT is LexerType.Token_KeyWord)
+                    {
+                        PrevType = CT;
 
+                        string value = Current.GetContent();
+
+                        if(Operator.Length is 0)
+                        {
+                            left = (value, "Bool");
+                        }
+                        else
+                        {
+                            right = (value, "Bool");
+                        }
+
+                        continue;
+                    }
 
                     if (CT is LexerType.Token_Identifier)
                     {
@@ -359,7 +376,8 @@ namespace Automa.Source.Core
                 bool inBlock = false,
                         inParen = false,
                         parseExpression = false,
-                        isAssign = false;
+                        isAssign = false,
+                        IsReturn = false;
                 int depth = 0, pdepth = 0; // brace depth and parenthesis depth
 
                 bool isArith = false;
@@ -370,6 +388,7 @@ namespace Automa.Source.Core
                 List<LexerToken> Toks = LexTok.Skip(StartingIndex).ToList();
                 List<LexerToken> ArithmeticTokens = new();
                 LexerToken? Peek = null;
+                Return? CR = null;
 
                 if (isdebug)
                 {
@@ -554,9 +573,22 @@ namespace Automa.Source.Core
                                 }
                             }
 
+                        }else if(keyword is "Return")
+                        {
+                            CurrentInstruction = keyword;
+                            IsReturn = true;
+                            continue;
+                        }else if(keyword is "True" or "False")
+                        {
+                            if (isAssign)
+                            {
+                                CurrentContent = (keyword, "bool");
+                                continue;
+                            }
+                            
                         }
 
-                        if (isAssign || inParen)
+                        if (isAssign || inParen || IsReturn)
                         {
                             if (keyword is "Read" or "Run")
                             {
@@ -569,7 +601,7 @@ namespace Automa.Source.Core
                             }
                             continue;
                         }
-                        else if (!isAssign)
+                        else if (!isAssign && !IsReturn)
                         {
                             CurrentInstruction = keyword;
                             continue;
@@ -592,7 +624,7 @@ namespace Automa.Source.Core
                         }
 
 
-                        if (isAssign || inParen) // if identifier is on right side or on a parenthesis
+                        if (isAssign || inParen || IsReturn) // if identifier is on right side or on a parenthesis
                         {
 
                             CurrentContent = (content, "identifier");
@@ -760,6 +792,25 @@ namespace Automa.Source.Core
                             isAssign = false;
 
                             continue;
+                        }else if(CurrentInstruction is "Return")
+                        {
+                            string Rtype = CurrentContent.type;
+
+                            if(Rtype is "int")
+                            {
+                                CR = new(CurrentContent.value, VariableType.Int);
+                            } else if(Rtype is "string")
+                            {
+                                CR = new(CurrentContent.value, VariableType.String);
+                            }else if(Rtype is "bool")
+                            {
+                                CR = new(CurrentContent.value, VariableType.Boolean);
+                            }else if(Rtype is "identifier")
+                            {
+                                CR = new(CurrentContent.value, VariableType.Identifier);
+                            }
+
+                            continue;
                         }
                         else
                         {
@@ -884,7 +935,7 @@ namespace Automa.Source.Core
                 }
                 else if (type == typeof(Function))
                 {
-                    Function fn = new(FN, args);
+                    Function fn = new(FN,CR ,args);
                     fn.Body = Bob.Build();
 
                     return (T)(object)fn;

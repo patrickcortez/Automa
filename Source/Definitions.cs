@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
+
 namespace Automa.Source
 {
     internal enum PrintOptions // ConsoleWriteLine Wrapper
@@ -21,7 +22,7 @@ namespace Automa.Source
         String, // "ABCdef..."
         Int, // 1,2,3,...
         Boolean, // true or false
-        Dynamic, // for Arguments
+        Invokable, // function call
 
         Identifier // var,num
     }
@@ -40,6 +41,7 @@ namespace Automa.Source
         Token_Minus, // -
         TokenString, // Dave123
         TokenInt, // 123
+        TokenBool, // true or false
         Token_Not, // !
         TokenArith, // 2 + 2 - 2
         Token_Identifier, // Write,Read etc...
@@ -223,21 +225,41 @@ namespace Automa.Source
                 return;
             }
 
-            Result.value = val.ToString();
-            Result.type = VariableType.Int;
+            Result = Result with { value = val.ToString() };
+            Result = Result with { type = VariableType.Int };
 
             return;
         }
     }
 
-    internal record Variable(string _name, string _value, VariableType _type = VariableType.String)
-    {
-        public string name { get; set; } = _name;
-        public string value { get; set; } = _value;
+    internal abstract record Invokable;
 
-        public VariableType type = _type;
+    internal record FunctionCall(string name, string? target = null, List<Parameter>? Params = null) : Invokable
+    {
+        public int Invoke(List<Variable> Scope)
+        {
+
+            if(target is null) // expression
+            {
+               FunctionCache.RunFunc(name, Params, Scope);
+            }
+
+            Variable? Target = Scope.FirstOrDefault(ex => ex.name == target);
+
+            if(Target is null)
+            {
+
+            }
+
+            FunctionCache.RunFunc(name, Params, Scope);
+        }
     }
 
+
+    // variable definition
+    internal record Variable(string name, string value, VariableType type = VariableType.String, (List<Parameter>? Arguments, Return? type)? FunctionCall = null): Invokable;
+
+    // Block types:
     internal abstract record Block : Instruction
     {
         public Instruction? Body { get; set; } = null;
@@ -421,6 +443,22 @@ namespace Automa.Source
                 VariableExpression rexpr => rexpr.Eval(Variables),
                 _ => ""
             };
+
+            if(Lval is "True" or "False"|| Rval is "True" or "False")
+            {
+                bool Lb = false, Rb=false;
+                if(Lval is "True" or "False")
+                {
+                    Lval = Lval.ToLower();
+                }
+
+                if (Lval is "True" or "False")
+                {
+                    Rval = Lval.ToLower();
+                }
+
+                return Lb == Rb;
+            }
 
             return Lval == Rval;
         }
@@ -635,8 +673,9 @@ namespace Automa.Source
 
     // Function
 
-    internal record Return(string value, VariableType type);
+    internal record Return(string value, VariableType type); // Function return
 
+    // function definition
     internal record Function(string name,Return returnVal,List<Variable> Args) : Block
     {
         public int ExecuteBlock(List<Parameter> Param,List<Variable> Scope)
@@ -652,12 +691,12 @@ namespace Automa.Source
                     case VariableType.Boolean:
                     case VariableType.String:
 
-                        Args[pos] = Args[pos] with { _type = CT,value = par.value };
+                        Args[pos] = Args[pos] with { type = CT,value = par.value };
                         break;
                     case VariableType.Identifier:
                         Variable? Result = Scope.FirstOrDefault(ex => ex.name == par.value);
 
-                        Args[pos] = Args[pos] with { _type = Result.type, value = Result.value };
+                        Args[pos] = Args[pos] with { type = Result.type, value = Result.value };
 
                         break;
 
@@ -672,17 +711,6 @@ namespace Automa.Source
         }
 
         
-    }
-
-    // functions are for assignment only or lone function calls. making it work with arith, boolean expr and assign takes a massive rewrite.
-    // maybe in the future, when i feel like it, i'll refactor.
-    internal record FunctionCall(List<Parameter> param,string name,string target = "") : Instruction 
-    {
-        public int CallFunction(List<Variable> Scope)
-        {
-            
-            return FunctionCache.RunFunc(name,param,Scope);
-        }
     }
 
     internal record Parameter(string value, VariableType type);

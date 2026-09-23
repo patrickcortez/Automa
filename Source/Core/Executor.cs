@@ -1,4 +1,5 @@
 ﻿using Automa.Source.Utility;
+using Automa.Source.Definitions;
 using static Automa.Source.Utility.Utils;
 
 namespace Automa.Source.Core
@@ -57,7 +58,7 @@ namespace Automa.Source.Core
                             {
                                 Console.Write("[Debug] Executing Assignment with");
                             }
-
+                            
                             if (assignment.type is VariableAssign var)
                             {
                                 if (isdebug)

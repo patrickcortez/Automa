@@ -1,15 +1,5 @@
-﻿using Automa.Source.Utility;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Reflection.Metadata;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks.Dataflow;
-using System.Transactions;
+﻿using Automa.Source.Definitions;
 using static Automa.Source.Utility.Utils;
-
 using ExpOperand = (string Content, string Type);
 
 namespace Automa.Source.Core
@@ -935,7 +925,7 @@ namespace Automa.Source.Core
                 }
                 else if (type == typeof(Function))
                 {
-                    Function fn = new(FN,CR ,args);
+                    Function fn = new(CR ,args);
                     fn.Body = Bob.Build();
 
                     return (T)(object)fn;
@@ -1340,7 +1330,7 @@ namespace Automa.Source.Core
 
                         if(CB == "Function")
                         {
-                            NodeBuilder.AddNode(new FunctionCall(AddParams(),FN,CI));
+                            NodeBuilder.AddNode(new FunctionCall(FN,CI,));
 
                             
 
@@ -1640,7 +1630,7 @@ namespace Automa.Source.Core
 
                         if(FN is not "")
                         {
-                            FunctionCache.Add(ParseStatement<Function>(Current, out int skip, LexerType.Token_RBrace, FN, AddArgs()));
+                            FunctionTable.Add(ParseStatement<Function>(Current, out int skip, LexerType.Token_RBrace, FN, AddArgs()));
                             args.Clear();
                             FN = "";
                             inBlock = false;

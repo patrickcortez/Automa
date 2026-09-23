@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Automa.Source.Definitions;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 
-namespace Automa.Source
+namespace Automa.Source.Core
 {
     internal class NestBuilder(Instruction? Initial = null)
     {

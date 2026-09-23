@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Automa.Source.Definitions;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;

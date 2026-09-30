@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Automa.Source.Definitions
@@ -17,30 +18,38 @@ namespace Automa.Source.Definitions
         public void UpdateScope(List<Variable> Scope)
         {
             Variable? Result = Scope.FirstOrDefault();
+            IValue res = Result.value;
 
             if (Result is null)
             {
                 return;
             }
 
-            if (Result.type is not VariableType.Int)
+            if (Result.value is not AutomaInteger)
             {
                 return;
             }
 
-            int res = int.Parse(Result.value);
-
-            if (kind is UnaryKind.Increment)
+            if(res is AutomaInteger integ)
             {
-                res++;
-            }
-            else
-            {
-                res--;
-            }
+                int val = integ.value;
 
-            Result = Result with { value = res.ToString() };
-            return;
+                if (kind is UnaryKind.Increment)
+                {
+                    val++;
+                }
+                else
+                {
+                    val--;
+                }
+
+                integ = integ with { value = val };
+
+                Result = Result with { value = integ };
+                return;
+            }                           
+
+
         }
     }
 
@@ -62,12 +71,18 @@ namespace Automa.Source.Definitions
 
             if (Result is null)
             {
-                Scope.Add(new Variable(target, val.ToString(), VariableType.Int));
+                Scope.Add(new Variable(target,new AutomaInteger(val), VariableType.Int));
                 return;
             }
 
-            Result = Result with { value = val.ToString() };
-            Result = Result with { type = VariableType.Int };
+            if(Result.value is AutomaInteger integ)
+            {
+                integ = integ with { value = val };
+                Result = Result with { value = integ,type = VariableType.Int };
+                
+            }
+
+
 
             return;
         }
@@ -81,16 +96,20 @@ namespace Automa.Source.Definitions
             if (target is null) // expression
             {
                 FunctionTable.RunFunc(name, Params, Scope);
+                return 0;
             }
 
             Variable? Target = Scope.FirstOrDefault(ex => ex.name == target);
+            Return? result = FunctionTable.RunFunc(name, Params, Scope);
 
             if (Target is null)
             {
-
+                Scope.Add(new(target, result.value));
+                return 0;
             }
-
-            FunctionTable.RunFunc(name, Params, Scope);
+            Target = Target with { value = result.value };
+            int index = Scope.IndexOf(Target);
+            Scope[index] = Target;
 
             return 1;
         }
@@ -100,7 +119,7 @@ namespace Automa.Source.Definitions
 
     internal record RunAssignment((string Target, string Cmd) Properties) : AssignType
     {
-        public string Run()
+        public int Run()
         {
             string[] cmdPart = Properties.Cmd.Split(' ', 2);
             string name = cmdPart[0];
@@ -139,10 +158,10 @@ namespace Automa.Source.Definitions
                 };
 
                 proc.WaitForExit();
-                return $"{proc.ExitCode}";
+                return proc.ExitCode;
             }
 
-            return "1";
+            return proc.ExitCode;
         }
     }
 }

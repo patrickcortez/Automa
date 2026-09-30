@@ -1,6 +1,9 @@
 ﻿using Automa.Source.Definitions;
+using System.ComponentModel.DataAnnotations;
 using static Automa.Source.Utility.Utils;
 using ExpOperand = (string Content, string Type);
+
+// implement function call parsing in logical expression and assignment, =P
 
 namespace Automa.Source.Core
 {
@@ -19,9 +22,10 @@ namespace Automa.Source.Core
 
                 bool hasLogicalOps = false;
 
-                string Operator = "",LogicOp="";
+                string Operator = "",LogicOp="",Funcname="";
 
                 List<LexerToken>? NextUnit = null;
+                List<Parameter>? Args = new(),Pargs=new();
 
                 void SetNext(List<LexerToken> Trimmed,LexerType type)
                 {
@@ -38,9 +42,18 @@ namespace Automa.Source.Core
                 {
                     Console.WriteLine("\n[Debug] Current Expression (total tokens in expr: {0}):", Tokens.Count);
                 }
-                foreach (LexerToken Current in Tokens)
+                for(int i = 0; i < Tokens.Count;i++)
                 {
+                    LexerToken Current = Tokens[i];
+
+                    LexerToken? Next = null;
+
                     LexerType CT = Current.TokenType;
+
+                    if(i < Tokens.Count - 1)
+                    {
+                        Next = Tokens[i + 1];
+                    }
 
                     if (isdebug)
                     {
@@ -68,6 +81,12 @@ namespace Automa.Source.Core
                     if (CT is LexerType.Token_Identifier)
                     {
                         PrevType = CT;
+
+                        if(Next.Value.TokenType is LexerType.Token_LParen)
+                        {
+                            Funcname = Current.GetContent();
+                            continue;
+                        }
 
                         if (Operator.Length is 0)
                         {
@@ -126,6 +145,58 @@ namespace Automa.Source.Core
                             right = (Current.GetContent(), type);
                         }
 
+                    }else if(CT is LexerType.Token_LParen)
+                    {
+                        int skip = 0;
+
+                        if(Args.Count is not 0)
+                        {
+                            Pargs = new(Args);
+                            Args.Clear();
+                        }
+
+                        while(Tokens[i + 1 + skip].TokenType is not LexerType.Token_RParen)
+                        {
+                            LexerToken? Node = Tokens[i + 1 + skip];
+                            string content = Node.Value.GetContent();
+                            LexerType NPM = Node.Value.TokenType;
+
+                            if(NPM is LexerType.Token_Comma)
+                            {
+                                skip++;
+                                continue;
+                            }
+
+                            if(NPM is LexerType.Token_Identifier)
+                            {
+                                Args.Add(new(content, VariableType.Identifier)); 
+                            }else if(NPM is LexerType.TokenInt)
+                            {
+                                Args.Add(new(content, VariableType.Int));
+                            }else if(NPM is LexerType.TokenString)
+                            {
+                                Args.Add(new(content, VariableType.String));
+                            }else if(NPM is LexerType.TokenBool)
+                            {
+                                Args.Add(new(content, VariableType.Boolean));
+                            }
+
+                            skip++;
+                        }
+
+                        if(Operator.Length is 0)
+                        {
+                            left = (Funcname, "FunctionCall");
+                        }
+                        else
+                        {
+                            right = (Funcname, "FunctionCall");
+                        }
+
+                        if(skip > 0)
+                        {
+                            i += skip;
+                        }
                     }
                     else
                     {
@@ -145,7 +216,19 @@ namespace Automa.Source.Core
                 if (Operator == "EQ")
                 {
                    
-                    EqualTo eq = new EqualTo(new LiteralExpression(lcontent), new LiteralExpression(rcontent));
+                    EqualTo eq = new EqualTo(new LiteralExpression(new AutomaString(lcontent)), new LiteralExpression( new AutomaString(rcontent)));
+
+
+
+                    if(left.Type is "FunctionCall")
+                    {
+                        eq = eq with { Left = new FunctionExpression(new AutomaFunction(left.Content, Pargs)) };
+                    }
+
+                    if(right.Type is "FunctionCall")
+                    {
+                        eq = eq with { Right = new FunctionExpression(new AutomaFunction(right.Content, Args)) };
+                    }
 
                     if(left.Type is "Identifier")
                     {
@@ -181,7 +264,17 @@ namespace Automa.Source.Core
                 }
                 else if (Operator == "NEQ")
                 {
-                    NotEqualTo nexpr = new NotEqualTo(new LiteralExpression(lcontent), new LiteralExpression(rcontent));
+                    NotEqualTo nexpr = new NotEqualTo(new LiteralExpression(new AutomaString(lcontent)), new LiteralExpression(new AutomaString(rcontent)));
+
+                    if (left.Type is "FunctionCall")
+                    {
+                        nexpr = nexpr with { Left = new FunctionExpression(new AutomaFunction(left.Content, Pargs)) };
+                    }
+
+                    if (right.Type is "FunctionCall")
+                    {
+                        nexpr = nexpr with { Right = new FunctionExpression(new AutomaFunction(right.Content, Args)) };
+                    }
 
                     if (left.Type is "Identifier")
                     {
@@ -213,7 +306,17 @@ namespace Automa.Source.Core
                     }
                 }else if(Operator is "GT")
                 {
-                    GreaterThan nexpr = new GreaterThan(new LiteralExpression(lcontent), new LiteralExpression(rcontent));
+                    GreaterThan nexpr = new GreaterThan(new LiteralExpression(new AutomaString(lcontent)), new LiteralExpression(new AutomaString(rcontent)));
+
+                    if (left.Type is "FunctionCall")
+                    {
+                        nexpr = nexpr with { Left = new FunctionExpression(new AutomaFunction(left.Content, Pargs)) };
+                    }
+
+                    if (right.Type is "FunctionCall")
+                    {
+                        nexpr = nexpr with { Right = new FunctionExpression(new AutomaFunction(right.Content, Args)) };
+                    }
 
                     if (left.Type is "Identifier")
                     {
@@ -246,7 +349,17 @@ namespace Automa.Source.Core
                 }
                 else if (Operator is "LT")
                 {
-                    LessThan nexpr = new LessThan(new LiteralExpression(lcontent), new LiteralExpression(rcontent));
+                    LessThan nexpr = new LessThan(new LiteralExpression(new AutomaString(lcontent)), new LiteralExpression(new AutomaString(rcontent)));
+
+                    if (left.Type is "FunctionCall")
+                    {
+                        nexpr = nexpr with { Left = new FunctionExpression(new AutomaFunction(left.Content, Pargs)) };
+                    }
+
+                    if (right.Type is "FunctionCall")
+                    {
+                        nexpr = nexpr with { Right = new FunctionExpression(new AutomaFunction(right.Content, Args)) };
+                    }
 
                     if (left.Type is "Identifier")
                     {
@@ -279,7 +392,17 @@ namespace Automa.Source.Core
                 }
                 else if (Operator is "GTE")
                 {
-                    GTE nexpr = new GTE(new LiteralExpression(lcontent), new LiteralExpression(rcontent));
+                    GTE nexpr = new GTE(new LiteralExpression(new AutomaString(lcontent)), new LiteralExpression(new AutomaString(rcontent)));
+
+                    if (left.Type is "FunctionCall")
+                    {
+                        nexpr = nexpr with { Left = new FunctionExpression(new AutomaFunction(left.Content, Pargs)) };
+                    }
+
+                    if (right.Type is "FunctionCall")
+                    {
+                        nexpr = nexpr with { Right = new FunctionExpression(new AutomaFunction(right.Content, Args)) };
+                    }
 
                     if (left.Type is "Identifier")
                     {
@@ -312,7 +435,17 @@ namespace Automa.Source.Core
                 }
                 else if (Operator is "LTE")
                 {
-                    LTE nexpr = new LTE(new LiteralExpression(lcontent), new LiteralExpression(rcontent));
+                    LTE nexpr = new LTE(new LiteralExpression(new AutomaString(lcontent)), new LiteralExpression(new AutomaString(rcontent)));
+
+                    if (left.Type is "FunctionCall")
+                    {
+                        nexpr = nexpr with { Left = new FunctionExpression(new AutomaFunction(left.Content, Pargs)) };
+                    }
+
+                    if (right.Type is "FunctionCall")
+                    {
+                        nexpr = nexpr with { Right = new FunctionExpression(new AutomaFunction(right.Content, Args)) };
+                    }
 
                     if (left.Type is "Identifier")
                     {
@@ -788,16 +921,16 @@ namespace Automa.Source.Core
 
                             if(Rtype is "int")
                             {
-                                CR = new(CurrentContent.value, VariableType.Int);
+                                CR = new(new AutomaInteger(int.Parse(CurrentContent.value)), VariableType.Int);
                             } else if(Rtype is "string")
                             {
-                                CR = new(CurrentContent.value, VariableType.String);
+                                CR = new(new AutomaString(CurrentContent.value), VariableType.String);
                             }else if(Rtype is "bool")
                             {
-                                CR = new(CurrentContent.value, VariableType.Boolean);
+                                CR = new(new AutomaBoolean(bool.Parse(CurrentContent.value)), VariableType.Boolean);
                             }else if(Rtype is "identifier")
                             {
-                                CR = new(CurrentContent.value, VariableType.Identifier);
+                                CR = new(new AutomaString(CurrentContent.value), VariableType.Identifier);
                             }
 
                             continue;
@@ -850,7 +983,17 @@ namespace Automa.Source.Core
                             }
                             else
                             {
-                                Bob.AddNode(new AssignInstruction(new VariableAssign(new(varname, CurrentContent.value, _type))));
+                                IValue? value = null;
+
+                                if (_type is VariableType.Int)
+                                {
+                                    value = new AutomaInteger(int.Parse(CurrentContent.value));
+                                }else if(_type is VariableType.String)
+                                {
+                                    value = new AutomaString(CurrentContent.value);
+                                }
+
+                                Bob.AddNode(new AssignInstruction(new VariableAssign(new(varname, value , _type))));
                             }
 
 
@@ -968,7 +1111,7 @@ namespace Automa.Source.Core
                     List<Variable> nlist = new();
                     foreach(Parameter arg in args)
                     {
-                        nlist.Add(new(arg.value, "",arg.type));
+                        nlist.Add(new(arg.value,new AutomaString(""),arg.type));
                     }
 
                     return nlist;
@@ -1330,9 +1473,16 @@ namespace Automa.Source.Core
 
                         if(CB == "Function")
                         {
-                            NodeBuilder.AddNode(new FunctionCall(FN,CI,));
+                            if (CI is "")
+                            {
+                                NodeBuilder.AddNode(new AssignInstruction(new FunctionCall(FN, null, AddParams())));
+                            }
+                            else
+                            {
+                                NodeBuilder.AddNode(new AssignInstruction(new FunctionCall(FN,CI,AddParams())));
+                            }
 
-                            
+
 
                             // reset
                             args.Clear();
@@ -1463,14 +1613,21 @@ namespace Automa.Source.Core
                         else
                         {
                             VariableType _type = VariableType.String;
+                            IValue value = new AutomaString(CC.content);
 
                             if (CC.type is "int")
                             {
                                 _type = VariableType.Int;
+                                value = new AutomaInteger(int.Parse(CC.content));
                             }
                             else if (CC.type is "identifier")
                             {
                                 _type = VariableType.Identifier;
+                            }
+                            else if( CC.type is "bool")
+                            {
+                                _type = VariableType.Boolean;
+                                value = new AutomaBoolean(bool.Parse(CC.content));
                             }
 
                             string varname = CI;
@@ -1552,7 +1709,7 @@ namespace Automa.Source.Core
 
                             if ((inBlock && !isArith) && depth is 1)
                             {
-                                NodeBuilder.AddNode(new AssignInstruction(new VariableAssign(new(varname, CC.content, _type))), inBlock);
+                                NodeBuilder.AddNode(new AssignInstruction(new VariableAssign(new(varname, value, _type))), inBlock);
                                 //reset all before proceeding to the next
 
                                 CI = string.Empty; // erase CI for the next...
@@ -1564,7 +1721,7 @@ namespace Automa.Source.Core
 
                             if ((!inBlock && !isArith) && depth is 0)
                             {
-                                NodeBuilder.AddNode(new AssignInstruction(new VariableAssign(new(varname, CC.content, _type))));
+                                NodeBuilder.AddNode(new AssignInstruction(new VariableAssign(new(varname, value, _type))));
                                 //reset all before proceeding to the next
 
                                 CI = string.Empty; // erase CI for the next...
@@ -1578,7 +1735,7 @@ namespace Automa.Source.Core
 
 
                     }
-                    else if (CT is LexerType.TokenString or LexerType.TokenInt) // Integer or String literals
+                    else if (CT is LexerType.TokenString or LexerType.TokenInt or LexerType.TokenBool) // Integer,Boolean or String literals
                     {
                         prevTok = CT;
 
@@ -1593,6 +1750,9 @@ namespace Automa.Source.Core
 
                             CC = (Current.GetContent(), "int");
                             continue;
+                        }else if(CT is LexerType.TokenBool)
+                        {
+                            CC = (Current.GetContent(), "bool");
                         }
 
                         CC = (Current.GetContent(), "string");
@@ -1630,7 +1790,7 @@ namespace Automa.Source.Core
 
                         if(FN is not "")
                         {
-                            FunctionTable.Add(ParseStatement<Function>(Current, out int skip, LexerType.Token_RBrace, FN, AddArgs()));
+                            FunctionTable.Add(FN,ParseStatement<Function>(Current, out int skip, LexerType.Token_RBrace, FN, AddArgs()));
                             args.Clear();
                             FN = "";
                             inBlock = false;

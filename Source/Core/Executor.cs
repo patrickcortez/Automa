@@ -2,10 +2,13 @@
 using Automa.Source.Definitions;
 using static Automa.Source.Utility.Utils;
 
+
+// Implement function calls and returns
+
 namespace Automa.Source.Core
 {
 
-    internal class Executor(Instruction Current, List<Variable>? Variables = null)
+    internal class Executor(Instruction Current, List<Variable>? Variables = null, Return? ret = null) // Var and ret is opt, no need for ref since ret is a ref type.
     {
 
         public int Start(bool isdebug = false,List<Variable>? Arguments=null,List<Variable>? Outer=null)
@@ -70,7 +73,7 @@ namespace Automa.Source.Core
 
                                 Variable newVariable = var.variable;
                                 Variable? findVariable = FindVariable(newVariable.name,Variables);
-                                Variable? FindValue = FindVariable(newVariable.value, Variables);
+                                Variable? FindValue = FindVariable((string)newVariable.value.Eval(), Variables);
 
                                 if(findVariable is not null)
                                 {
@@ -116,11 +119,11 @@ namespace Automa.Source.Core
                                 {
                                     int vIndex = Variables.IndexOf(findVariable);
 
-                                    Variables[vIndex] = Variables[vIndex] with { value = Input(read.Prompt) ?? ""};
+                                    Variables[vIndex] = Variables[vIndex] with { value = new AutomaString( Input(read.Prompt) ?? "")};
                                     break;
                                 }
 
-                                Variable newVariable = new(read.target, Input(read.Prompt) ?? "");
+                                Variable newVariable = new(read.target, new AutomaString(Input(read.Prompt) ?? ""));
                                 Variables.Add(newVariable);
                                 break;
                             } 
@@ -142,11 +145,11 @@ namespace Automa.Source.Core
                                 if(findVariable is not null)
                                 {
                                     int vIndex = Variables.IndexOf(findVariable);
-                                    Variables[vIndex] = Variables[vIndex] with { value = run.Run() };
+                                    Variables[vIndex] = Variables[vIndex] with { value = new AutomaInteger(run.Run()) };
                                     break;
                                 }
 
-                                Variables.Add(new(run.Properties.Target, run.Run()));
+                                Variables.Add(new(run.Properties.Target, new AutomaInteger(run.Run())));
                                 break;
                             }
                             else if(assignment.type is ArithmeticAssign arith) // handle arithmetic
@@ -164,11 +167,19 @@ namespace Automa.Source.Core
                             {
                                 if (isdebug)
                                 {
-                                    Console.WriteLine("Unary Assign");
+                                    Console.WriteLine("[DEBUG] Unary Assign");
                                 }
 
                                 UA.UpdateScope(Variables);
                                 break;
+                            }else if(assignment.type is FunctionCall FA)
+                            {
+                                if (isdebug)
+                                {
+                                    Console.WriteLine("[DEBUG] Function Call");
+                                }
+
+                                FA.Invoke(Scope: Variables);
                             }
 
                             break;
@@ -240,16 +251,6 @@ namespace Automa.Source.Core
                             }
 
                             Compare(Variables);
-                            break;
-                        case FunctionCall fc:
-
-                            Variable? target = Variables.FirstOrDefault(ex => ex.name == fc.target);
-
-                            if(target is null)
-                            {
-                                 // target = new(fc.target)
-                            }
-
                             break;
                         default:
                             break;

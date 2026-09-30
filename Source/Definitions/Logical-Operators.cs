@@ -39,7 +39,7 @@ namespace Automa.Source.Definitions
 
     internal abstract record Operand
     {
-        public abstract string Eval(List<Variable> Scope);
+        public abstract IValue Eval(List<Variable> Scope);
     }
 
     internal record VariableExpression(string VariableName) : Operand
@@ -52,7 +52,7 @@ namespace Automa.Source.Definitions
             return Value;
         }
 
-        public override string Eval(List<Variable> Scope)
+        public override IValue Eval(List<Variable> Scope)
         {
             Variable? Result = Scope.FirstOrDefault(ex => ex.name == VariableName);
 
@@ -66,11 +66,28 @@ namespace Automa.Source.Definitions
         }
     }
 
-    internal record LiteralExpression(string value) : Operand
+    internal record LiteralExpression(IValue value) : Operand
     {
-        public override string Eval(List<Variable> Scope)
+        public override IValue Eval(List<Variable> Scope)
         {
             return value;
+        }
+    }
+
+    internal record FunctionExpression(IValue value) : Operand
+    {
+        public override IValue? Eval(List<Variable> Scope)
+        {
+            Return? ret = null;
+
+            if(value is AutomaFunction func)
+            {
+
+                ret = (Return)func.Eval(Scope);
+
+            }
+
+            return ret.value;
         }
     }
 
@@ -89,37 +106,21 @@ namespace Automa.Source.Definitions
 
         public override bool Evaluate(List<Variable> Variables)
         {
-            string Lval = Left switch
+            IValue Lval = Left switch
             {
                 LiteralExpression lexpr => lexpr.value,
                 VariableExpression lexpr => lexpr.Eval(Variables),
-                _ => ""
+                _ => new AutomaNull()
             };
 
-            string Rval = Right switch
+            IValue Rval = Right switch
             {
                 LiteralExpression rexpr => rexpr.value,
                 VariableExpression rexpr => rexpr.Eval(Variables),
-                _ => ""
+                _ => new AutomaNull() // impossible to reach anyways =P
             };
 
-            if (Lval is "True" or "False" || Rval is "True" or "False")
-            {
-                bool Lb = false, Rb = false;
-                if (Lval is "True" or "False")
-                {
-                    Lval = Lval.ToLower();
-                }
-
-                if (Lval is "True" or "False")
-                {
-                    Rval = Lval.ToLower();
-                }
-
-                return Lb == Rb;
-            }
-
-            return Lval == Rval;
+            return Lval.Eval() == Rval.Eval();
         }
 
     }
@@ -129,21 +130,21 @@ namespace Automa.Source.Definitions
 
         public override bool Evaluate(List<Variable> Variables)
         {
-            string Lval = Left switch
+            IValue Lval = Left switch
             {
                 LiteralExpression lexpr => lexpr.value,
                 VariableExpression lexpr => lexpr.Eval(Variables),
-                _ => ""
+                _ => new AutomaNull()
             };
 
-            string Rval = Right switch
+            IValue Rval = Right switch
             {
                 LiteralExpression rexpr => rexpr.value,
                 VariableExpression rexpr => rexpr.Eval(Variables),
-                _ => ""
+                _ => new AutomaNull()
             };
 
-            return Lval != Rval;
+            return Lval.Eval() != Rval.Eval();
         }
 
 
@@ -156,27 +157,30 @@ namespace Automa.Source.Definitions
             try
             {
 
-                int Lval = Left switch
+                IValue Lval = Left switch
                 {
-                    LiteralExpression rexpr => int.Parse(rexpr.value),
-                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
-                    _ => 0
+                    LiteralExpression rexpr => rexpr.value,
+                    VariableExpression rexpr => rexpr.Eval(Variables),
+                    _ => new AutomaInteger(0)
                 };
 
-                int Rval = Right switch
+                IValue Rval = Right switch
                 {
-                    LiteralExpression rexpr => int.Parse(rexpr.value),
-                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
-                    _ => 0
+                    LiteralExpression rexpr => rexpr.value,
+                    VariableExpression rexpr => rexpr.Eval(Variables),
+                    _ => new AutomaInteger(0)
                 };
 
+                if (Lval is AutomaString or AutomaBoolean || Rval is AutomaString or AutomaBoolean)
+                {
+                    throw new Exception($"{Lval} and {Rval}");
+                }
 
-
-                return Lval > Rval;
+                return (int)Lval.Eval() > (int)Rval.Eval();
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Cannot numerically compare strings! \n{ex}");
+                Console.Error.WriteLine($"Can only compare numbers! not: \n{ex}");
                 return false;
             }
         }
@@ -189,27 +193,30 @@ namespace Automa.Source.Definitions
             try
             {
 
-                int Lval = Left switch
+                IValue Lval = Left switch
                 {
-                    LiteralExpression rexpr => int.Parse(rexpr.value),
-                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
-                    _ => 0
+                    LiteralExpression rexpr => rexpr.value,
+                    VariableExpression rexpr => rexpr.Eval(Variables),
+                    _ => new AutomaInteger(0)
                 };
 
-                int Rval = Right switch
+                IValue Rval = Right switch
                 {
-                    LiteralExpression rexpr => int.Parse(rexpr.value),
-                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
-                    _ => 0
+                    LiteralExpression rexpr => rexpr.value,
+                    VariableExpression rexpr => rexpr.Eval(Variables),
+                    _ => new AutomaInteger(0)
                 };
 
+                if (Lval is AutomaString or AutomaBoolean || Rval is AutomaString or AutomaBoolean)
+                {
+                    throw new Exception($"{Lval} and {Rval}");
+                }
 
-
-                return Lval < Rval;
+                return (int)Lval.Eval() < (int)Rval.Eval();
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Cannot numerically compare strings! \n{ex}");
+                Console.Error.WriteLine($"Can only compare numbers! not: \n{ex}");
                 return false;
             }
         }
@@ -222,27 +229,30 @@ namespace Automa.Source.Definitions
             try
             {
 
-                int Lval = Left switch
+                IValue Lval = Left switch
                 {
-                    LiteralExpression rexpr => int.Parse(rexpr.value),
-                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
-                    _ => 0
+                    LiteralExpression rexpr => rexpr.value,
+                    VariableExpression rexpr => rexpr.Eval(Variables),
+                    _ => new AutomaInteger(0)
                 };
 
-                int Rval = Right switch
+                IValue Rval = Right switch
                 {
-                    LiteralExpression rexpr => int.Parse(rexpr.value),
-                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
-                    _ => 0
+                    LiteralExpression rexpr => rexpr.value,
+                    VariableExpression rexpr => rexpr.Eval(Variables),
+                    _ => new AutomaInteger(0)
                 };
 
+                if (Lval is AutomaString or AutomaBoolean || Rval is AutomaString or AutomaBoolean)
+                {
+                    throw new Exception($"{Lval} and {Rval}");
+                }
 
-
-                return Lval >= Rval;
+                return (int)Lval.Eval() >= (int)Rval.Eval();
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Cannot numerically compare strings! \n{ex}");
+                Console.Error.WriteLine($"Can only compare numbers! not: \n{ex}");
                 return false;
             }
         }
@@ -255,27 +265,30 @@ namespace Automa.Source.Definitions
             try
             {
 
-                int Lval = Left switch
+                IValue Lval = Left switch
                 {
-                    LiteralExpression rexpr => int.Parse(rexpr.value),
-                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
-                    _ => 0
+                    LiteralExpression rexpr => rexpr.value,
+                    VariableExpression rexpr => rexpr.Eval(Variables),
+                    _ => new AutomaInteger(0)
                 };
 
-                int Rval = Right switch
+                IValue Rval = Right switch
                 {
-                    LiteralExpression rexpr => int.Parse(rexpr.value),
-                    VariableExpression rexpr => int.Parse(rexpr.Eval(Variables)),
-                    _ => 0
+                    LiteralExpression rexpr => rexpr.value,
+                    VariableExpression rexpr => rexpr.Eval(Variables),
+                    _ => new AutomaInteger(0)
                 };
 
+                if (Lval is AutomaString or AutomaBoolean || Rval is AutomaString or AutomaBoolean)
+                {
+                    throw new Exception($"{Lval} and {Rval}");
+                }
 
-
-                return Lval <= Rval;
+                return (int)Lval.Eval() <= (int)Rval.Eval();
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Cannot numerically compare strings! \n{ex}");
+                Console.Error.WriteLine($"Can only compare numbers! not: \n{ex}");
                 return false;
             }
         }

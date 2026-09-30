@@ -78,17 +78,6 @@ namespace Automa.Source.Definitions
             Line = _Line;
         }
 
-        public void Append(string NewContent)
-        {
-
-            if (NewContent.Length == 0)
-            {
-                return;
-            }
-
-            Content.Append(NewContent);
-        }
-
         public string GetContent()
         {
             return Content.ToString();
@@ -107,18 +96,18 @@ namespace Automa.Source.Definitions
         Decrement
     }
 
-    // Assigns
-
+   // Instructions
     internal abstract record Instruction
     {
         public Instruction? Next { get; set; }
     }
 
-    // Instructions
+ 
     internal record WriteInstruction(string Content, bool isIdent = false) : Instruction;
 
-    // variable definition
-    internal record Variable(string name, string value, VariableType type = VariableType.String, (List<Parameter>? Arguments, Return? type)? FunctionCall = null);
+    // Variable Definition   
+
+    internal record Variable(string name, IValue value, VariableType type = VariableType.String, (List<Parameter>? Arguments, Return? type)? FunctionCall = null);
 
 }
 

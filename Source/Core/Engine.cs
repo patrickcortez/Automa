@@ -26,7 +26,7 @@ namespace Automa.Source.Core
          // Lex: ==,!=,>= and <=
          // properly parse Comparators and remove toggling.
 
-        private string[] keyWords = ["If", "Elif","Else","Write","Run","Read","While","Function","True","False","Return"];
+        private string[] keyWords = ["If", "Elif","Else","Write","Run","Read","While","Function","Return"];
         private string lastIdent = "";
 
         private LexerToken[]? Tokenize() // Lexer & Tokenizer
@@ -60,6 +60,13 @@ namespace Automa.Source.Core
                         if(Value.Length > 0)
                         {
                             string value = Value.ToString();
+
+                            if (value.Equals("True", StringComparison.OrdinalIgnoreCase) || value.Equals("False", StringComparison.OrdinalIgnoreCase)){
+                            
+                                Tokens.Add(new(LexerType.TokenBool,LineNo,value.ToLower()));
+                                Value.Clear();
+                            }
+
                             Tokens.Add(new((int.TryParse(value, out _) ? LexerType.TokenInt : LexerType.TokenString ),LineNo,value));
                             Value.Clear();
 
@@ -177,9 +184,19 @@ namespace Automa.Source.Core
                                 if (Value.Length > 0)
                                 {
                                     string Val = Value.ToString();
+
+                                    if(Val is "True" or "False")
+                                    {
+                                        Val = Val.ToLower();
+                                    }
+
                                     if (int.TryParse(Val, out int value)) // if value is int
                                     {
                                         Tokens.Add(new(LexerType.TokenInt, LineNo, Val));
+                                        Value.Clear();
+                                    }
+                                    else if (bool.TryParse(Val,out _)){ // Boolean: true or false
+                                        Tokens.Add(new(LexerType.TokenBool, LineNo, Val));
                                         Value.Clear();
                                     }
                                     else // string
@@ -188,7 +205,7 @@ namespace Automa.Source.Core
                                         Value.Clear();
                                     }
 
-
+                                    
                                 }
 
                                 Tokens.Add(new(LexerType.Token_SemiColon, LineNo));
@@ -205,9 +222,19 @@ namespace Automa.Source.Core
                                 {
                                     string val = Value.ToString();
 
+                                    if(val is  "True" or "False")
+                                    {
+                                        val = val.ToLower();
+                                    }
+
                                     if (int.TryParse(val, out int num))
                                     {
                                         Tokens.Add(new(LexerType.TokenInt, LineNo, val));
+                                    }
+                                    else if (bool.TryParse(val, out _))
+                                    { // Boolean: true or false
+                                        Tokens.Add(new(LexerType.TokenBool, LineNo, val));
+                                        Value.Clear();
                                     }
                                     else
                                     {
@@ -242,7 +269,7 @@ namespace Automa.Source.Core
 
                                 bool iscompare = Peek == '=';
 
-                                if (Value.Length > 0)
+                                if (Value.Length > 0) // Flush once Value is not empty
                                 {
 
                                     if (!iscompare)
@@ -312,9 +339,7 @@ namespace Automa.Source.Core
 
                                 if (Value.Length is not 0)
                                 {
-                                    string Val = Value.ToString();
-
-                                    Tokens.Add(new(LexerType.TokenInt, LineNo, Val));
+                                    Flush();
                                     Value.Clear();
                                 }
 
@@ -435,6 +460,11 @@ namespace Automa.Source.Core
                             }
                             else if(c is ',')
                             {
+                                if(Value.Length > 0)
+                                {
+                                    Flush();
+                                }
+
                                 Tokens.Add(new(LexerType.Token_Comma, LineNo));
                                 continue;
                             }

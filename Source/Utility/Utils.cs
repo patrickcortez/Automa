@@ -143,7 +143,7 @@ namespace Automa.Source.Utility
 
                 if (Line.Contains(Current))
                 {
-                    Line = Line.Replace(Current, var.value);
+                    Line = Line.Replace(Current, var.value.Eval().ToString());
                 }
             }
 

@@ -37,7 +37,14 @@ namespace Automa.Source.Definitions
                 throw new Exception($"Variable {name} is not an integer!");
             }
 
-            return int.Parse(result.value);
+            int res = 0;
+
+            if(result.value is AutomaInteger integ)
+            {
+                res = integ.value;
+            }
+
+            return res;
         }
     }
 
@@ -52,12 +59,12 @@ namespace Automa.Source.Definitions
                 return -1;
             }
 
-            if (result.type is not VariableType.Int)
+            if (result.type is not VariableType.Int)                                           
             {
                 return -1;
             }
 
-            return int.Parse(result.value);
+            return (int)result.value.Eval();
 
 
         }

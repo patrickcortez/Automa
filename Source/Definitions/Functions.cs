@@ -7,7 +7,7 @@ namespace Automa.Source.Definitions
 {
 
     // Functions
-    internal record Return(string value, VariableType type); // Function return
+    internal record Return(IValue value, VariableType type); // Function return
 
     // function definition
     internal record Function(Return returnVal, List<Variable> Args) : Block
@@ -22,10 +22,14 @@ namespace Automa.Source.Definitions
                 switch (CT)
                 {
                     case VariableType.Int:
+                        Args[pos] = Args[pos] with { type = CT, value = new AutomaInteger(int.Parse(par.value)) };
+                        break;
                     case VariableType.Boolean:
+                        Args[pos] = Args[pos] with { type = CT, value = new AutomaBoolean(bool.Parse(par.value)) };
+                        break;
                     case VariableType.String:
 
-                        Args[pos] = Args[pos] with { type = CT, value = par.value };
+                        Args[pos] = Args[pos] with { type = CT, value = new AutomaString(par.value) };
                         break;
                     case VariableType.Identifier:
                         Variable? Result = Scope.FirstOrDefault(ex => ex.name == par.value);

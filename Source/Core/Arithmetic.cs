@@ -4,11 +4,8 @@ using System.Collections.Generic;
 using System.Text;
 
 // Automa Arithmetic Handler
-// Addition and divisiion (for now)
+// With Multiplication and Division
 
-// TODO:
-// Implement Brace Depth Handling. (Recursive Descent)
-// Implement Multiplication and Division
 
 namespace Automa.Source.Core
 {
@@ -26,6 +23,9 @@ namespace Automa.Source.Core
             {
                 Console.WriteLine("[DEBUG] Parsing Arithmetic ({0} tokens)", tokens.Length);
             }
+
+
+           
 
 
             ArithmeticNode node = ParseExpr(tokens, ref pos); 
@@ -77,7 +77,10 @@ namespace Automa.Source.Core
                 throw new Exception("Arithmetic expression ended unexpectedly");
             }
 
+            int peek = pos + 1;
+
             LexerToken tok = t[pos];
+            LexerToken next = t[peek];
 
             switch (tok.TokenType) // token determinant
             {
@@ -86,6 +89,50 @@ namespace Automa.Source.Core
                     return new NumberNode(int.Parse(tok.GetContent()));
 
                 case LexerType.Token_Identifier:
+                    string func_name = string.Empty;
+
+                    if(next.TokenType is LexerType.Token_LParen)
+                    {
+
+                        func_name = tok.GetContent();
+                        List<Parameter> p = new();
+
+                        while (t[pos].TokenType is not LexerType.Token_RParen)
+                        {
+                            LexerToken current = t[pos];
+                            LexerType ctype = current.TokenType;
+
+                            if (ctype is LexerType.Token_Comma)
+                            {
+                                pos++;
+                                continue;
+                            }
+
+                            if(ctype is LexerType.Token_Identifier)
+                            {
+                                p.Add(new(current.GetContent(), VariableType.Identifier));
+                                
+                            }else if(ctype is LexerType.TokenInt)
+                            {
+                                p.Add(new(current.GetContent(),VariableType.Int));
+                            }else if(ctype is LexerType.TokenString)
+                            {
+                                p.Add(new(current.GetContent(), VariableType.String));
+                            }else if(ctype is LexerType.TokenBool)
+                            {
+                                p.Add(new(current.GetContent(),VariableType.Boolean));
+                            }
+                            
+                            
+                            pos++;
+                        }
+                    }
+
+                    if(func_name.Length > 0)
+                    {
+                        return new FunctionNode(func_name,new());
+                    }
+
                     pos++;
                     return new VariableNode(tok.GetContent());
 

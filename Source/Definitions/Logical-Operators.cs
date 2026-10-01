@@ -87,7 +87,7 @@ namespace Automa.Source.Definitions
 
             }
 
-            return ret.value;
+            return ret?.value;
         }
     }
 
@@ -110,6 +110,7 @@ namespace Automa.Source.Definitions
             {
                 LiteralExpression lexpr => lexpr.value,
                 VariableExpression lexpr => lexpr.Eval(Variables),
+                FunctionExpression fexpr => fexpr.Eval(Variables) ?? new AutomaNull(),
                 _ => new AutomaNull()
             };
 
@@ -117,6 +118,7 @@ namespace Automa.Source.Definitions
             {
                 LiteralExpression rexpr => rexpr.value,
                 VariableExpression rexpr => rexpr.Eval(Variables),
+                FunctionExpression fexpr => fexpr.Eval(Variables) ?? new AutomaNull(),
                 _ => new AutomaNull() // impossible to reach anyways =P
             };
 
@@ -134,6 +136,7 @@ namespace Automa.Source.Definitions
             {
                 LiteralExpression lexpr => lexpr.value,
                 VariableExpression lexpr => lexpr.Eval(Variables),
+                FunctionExpression fexpr => fexpr.Eval(Variables) ?? new AutomaNull(),
                 _ => new AutomaNull()
             };
 
@@ -141,6 +144,7 @@ namespace Automa.Source.Definitions
             {
                 LiteralExpression rexpr => rexpr.value,
                 VariableExpression rexpr => rexpr.Eval(Variables),
+                FunctionExpression fexpr => fexpr.Eval(Variables) ?? new AutomaNull(),
                 _ => new AutomaNull()
             };
 
@@ -161,6 +165,7 @@ namespace Automa.Source.Definitions
                 {
                     LiteralExpression rexpr => rexpr.value,
                     VariableExpression rexpr => rexpr.Eval(Variables),
+                    FunctionExpression fexpr => fexpr.Eval(Variables) ?? new AutomaNull(),
                     _ => new AutomaInteger(0)
                 };
 
@@ -168,6 +173,7 @@ namespace Automa.Source.Definitions
                 {
                     LiteralExpression rexpr => rexpr.value,
                     VariableExpression rexpr => rexpr.Eval(Variables),
+                    FunctionExpression fexpr => fexpr.Eval(Variables) ?? new AutomaNull(),
                     _ => new AutomaInteger(0)
                 };
 
@@ -197,6 +203,7 @@ namespace Automa.Source.Definitions
                 {
                     LiteralExpression rexpr => rexpr.value,
                     VariableExpression rexpr => rexpr.Eval(Variables),
+                    FunctionExpression fexpr => fexpr.Eval(Variables) ?? new AutomaNull(),
                     _ => new AutomaInteger(0)
                 };
 
@@ -204,6 +211,7 @@ namespace Automa.Source.Definitions
                 {
                     LiteralExpression rexpr => rexpr.value,
                     VariableExpression rexpr => rexpr.Eval(Variables),
+                    FunctionExpression fexpr => fexpr.Eval(Variables) ?? new AutomaNull(),
                     _ => new AutomaInteger(0)
                 };
 
@@ -233,6 +241,7 @@ namespace Automa.Source.Definitions
                 {
                     LiteralExpression rexpr => rexpr.value,
                     VariableExpression rexpr => rexpr.Eval(Variables),
+                    FunctionExpression fexpr => fexpr.Eval(Variables) ?? new AutomaNull(),
                     _ => new AutomaInteger(0)
                 };
 
@@ -240,6 +249,7 @@ namespace Automa.Source.Definitions
                 {
                     LiteralExpression rexpr => rexpr.value,
                     VariableExpression rexpr => rexpr.Eval(Variables),
+                    FunctionExpression fexpr => fexpr.Eval(Variables) ?? new AutomaNull(),
                     _ => new AutomaInteger(0)
                 };
 
@@ -269,6 +279,7 @@ namespace Automa.Source.Definitions
                 {
                     LiteralExpression rexpr => rexpr.value,
                     VariableExpression rexpr => rexpr.Eval(Variables),
+                    FunctionExpression fexpr => fexpr.Eval(Variables) ?? new AutomaNull(),
                     _ => new AutomaInteger(0)
                 };
 
@@ -276,6 +287,7 @@ namespace Automa.Source.Definitions
                 {
                     LiteralExpression rexpr => rexpr.value,
                     VariableExpression rexpr => rexpr.Eval(Variables),
+                    FunctionExpression fexpr => fexpr.Eval(Variables) ?? new AutomaNull(),
                     _ => new AutomaInteger(0)
                 };
 

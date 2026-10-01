@@ -20,6 +20,7 @@ The Following instructions of **Automa**:
 - **Else** : Else Block
 - **Run** : Run a external command/application.
 - **While** : for looping purposes
+- **Functions** : for making reusable blocks of code
 
 ## Assignment Types
 
@@ -34,6 +35,7 @@ The Following are the assignment types:
 	- Multiplication
 	- Division
 	- Parenthesis
+- **Function Call** : Returns the value of function based on what the function returns
 
 ## Logical Operators:
 
@@ -53,19 +55,54 @@ The Following are the assignment types:
 - **GreaterThan** : `>`
 - **GTE** : `>=`
 
+## Functions:
+
+**Automa** finally supports functions and its loosely evaluated based on what it returns.
+*Functions* are stored on a function table at Parse time, so it can be used anywhere at Runtime.
+
+## Quirks
+
+- In arithmetic: Functions must be declared after the left side, 
+I really do not want to add another case on what is arithmetic and what is not.
+
+- All instructions must be written with the first letter as capitalized. Because the interpreter is case sensitive.
+
+- Functions and variables types are implied and is loosely typed/evaluated.
+
+> [!NOTE]
+> I will improve the whole interpreter.
+> There are alot of very bad implementations all over the code-base,
+> especially the interpreter. I will improve them soon, but for now
+> I'm way too mentally exhausted from this project.
+
 ## Supported Operands and type
 
-The only two types in Automa is: `String` and `Int`.
+The only two types in Automa is: `String`, `Boolean` and `Int`.
+
+> [!NOTE]
+> Will add char, double and null soon...
 
 ### Example Usage:
 
 ```Automa
+
+Function Something(){
+	Write("In a function!");
+
+	Return 20;
+}
 
 name = "Cortez"
 
 sum = 20 + 20; # arithmetic assignment
 
 diff = sum - 20; 
+
+Something(); # Standalone function!
+
+num = Something(); # Function call in assignment.
+
+num = 2 + Something(); # Function call in arithmetic. 
 
 Secnum = 0;
 

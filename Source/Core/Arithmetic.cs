@@ -98,22 +98,24 @@ namespace Automa.Source.Core
                         func_name = tok.GetContent();
                         List<Parameter> p = new();
 
+                        pos += 2; //adv iden and lparen
+
                         while (t[pos].TokenType is not LexerType.Token_RParen)
                         {
                             LexerToken current = t[pos];
                             LexerType ctype = current.TokenType;
 
-                            if (ctype is LexerType.Token_Comma)
+                            if (ctype is LexerType.Token_Comma)  // skip all commas 
                             {
                                 pos++;
                                 continue;
                             }
 
-                            if(ctype is LexerType.Token_Identifier)
+                            if(ctype is LexerType.Token_Identifier) // add all params: var,name, etc...
                             {
                                 p.Add(new(new AutomaString(current.GetContent()), VariableType.Identifier));
                                 
-                            }else if(ctype is LexerType.TokenInt)
+                            }else if(ctype is LexerType.TokenInt)  // integer parameters: 123
                             {
                                 p.Add(new(new AutomaInteger(int.Parse(current.GetContent())),VariableType.Int));
                             }
@@ -125,11 +127,9 @@ namespace Automa.Source.Core
                             
                             pos++;
                         }
-                    }
 
-                    if(func_name.Length > 0)
-                    {
-                        return new FunctionNode(func_name,new());
+                        pos++; // adv right paren
+                        return new FunctionNode(func_name, p);
                     }
 
                     pos++;

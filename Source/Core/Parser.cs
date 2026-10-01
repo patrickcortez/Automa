@@ -34,6 +34,9 @@ namespace Automa.Source.Core
                     LogicOp = (type is LexerType.Token_And) ? "And" : "Or";
                 }
 
+
+
+
                 ExpOperand left = new(),right=new();
 
                 
@@ -64,7 +67,12 @@ namespace Automa.Source.Core
                     {
                         PrevType = CT;
 
-                        string value = Current.GetContent();
+                        string value = Current.GetContent().ToLower();
+
+                        if (isdebug)
+                        {
+                            Console.WriteLine($"[DEBUG] Current keyword: {value}");
+                        }
 
                         if(Operator.Length is 0)
                         {
@@ -85,6 +93,19 @@ namespace Automa.Source.Core
                         if(Next?.TokenType is LexerType.Token_LParen)
                         {
                             Funcname = Current.GetContent();
+                            continue;
+                        }
+
+                        if(Current.GetContent().ToLower() is "true" or "false")
+                        {
+                            if (Operator.Length is 0)
+                            {
+                                left = (Current.GetContent().ToLower(), "Bool");
+                            }
+                            else
+                            {
+                                right = (Current.GetContent().ToLower(), "Bool");
+                            }
                             continue;
                         }
 
@@ -147,7 +168,7 @@ namespace Automa.Source.Core
 
                     }else if(CT is LexerType.Token_LParen)
                     {
-                        int skip = 0;
+                        int skip = 1;
 
                         if(Args.Count is not 0)
                         {
@@ -155,9 +176,9 @@ namespace Automa.Source.Core
                             Args.Clear();
                         }
 
-                        while(Tokens[i + 1 + skip].TokenType is not LexerType.Token_RParen)
+                        while(i + skip < Tokens.Count && Tokens[i + skip].TokenType is not LexerType.Token_RParen)
                         {
-                            LexerToken? Node = Tokens[i + 1 + skip];
+                            LexerToken? Node = Tokens[i + skip];
                             string content = Node.Value.GetContent();
                             LexerType NPM = Node.Value.TokenType;
 
@@ -195,7 +216,7 @@ namespace Automa.Source.Core
 
                         if(skip > 0)
                         {
-                            i += skip;
+                            i += skip; // skip R paren
                         }
                     }
                     else
@@ -236,7 +257,7 @@ namespace Automa.Source.Core
 
                     if (right.Type is "Bool")
                     {
-                        eq = eq with { Right = new LiteralExpression(new AutomaBoolean(bool.Parse(lcontent))) };
+                        eq = eq with { Right = new LiteralExpression(new AutomaBoolean(bool.Parse(rcontent))) };
                     }
 
                     if (left.Type is "FunctionCall")
@@ -251,6 +272,7 @@ namespace Automa.Source.Core
 
                     if(left.Type is "Identifier")
                     {
+
                         eq = eq with { Left = new VariableExpression(lcontent) };
                     }
 
@@ -302,7 +324,7 @@ namespace Automa.Source.Core
 
                     if (right.Type is "Bool")
                     {
-                        nexpr = nexpr with { Right = new LiteralExpression(new AutomaBoolean(bool.Parse(lcontent))) };
+                        nexpr = nexpr with { Right = new LiteralExpression(new AutomaBoolean(bool.Parse(rcontent))) };
                     }
 
                     if (left.Type is "FunctionCall")
@@ -640,10 +662,36 @@ namespace Automa.Source.Core
                     }
 
                     // Expression Handling
-                    if (parseExpression && CurrentType is not LexerType.Token_RParen && depth is 0)
+                    if (parseExpression && depth is 0)
                     {
-                        expression.Add(Current);
-                        continue;
+                        if (CurrentType is LexerType.Token_LParen) // (
+                        {
+                            // increase pdepth and add token
+                            pdepth++;
+                            expression.Add(Current);
+                            continue;
+                        }
+                        else if (CurrentType is LexerType.Token_RParen)  // )
+                        {
+                            if (pdepth > 0) // add token and decrease depth
+                            {
+                                pdepth--;
+                                expression.Add(Current);
+                                continue;
+                            }
+                            else
+                            {
+                                // end parsing when pdepth is 0
+                                expr = ParseExpression(expression);
+                                parseExpression = false;
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            expression.Add(Current);
+                            continue;
+                        }
                     }
                     else if (parseExpression && CurrentType is LexerType.Token_RParen && depth is 0)
                     {
@@ -871,10 +919,16 @@ namespace Automa.Source.Core
                         }
 
 
-                        if (isAssign || inParen || IsReturn) // if identifier is on right side or on a parenthesis
+                        if (isAssign || inParen || IsReturn)
                         {
-
-                            CurrentContent = (content, "identifier");
+                            if (content.Equals("True", StringComparison.OrdinalIgnoreCase) || content.Equals("False", StringComparison.OrdinalIgnoreCase))
+                            {
+                                CurrentContent = (content.ToLower(), "bool");
+                            }
+                            else
+                            {
+                                CurrentContent = (content, "identifier");
+                            }
                             continue;
                         }
                         else // left side, possible variable decl
@@ -971,7 +1025,7 @@ namespace Automa.Source.Core
                             continue;
                         }
 
-                        if (!isAssign && !inParen)
+                        if (!isAssign && !inParen && CurrentInstruction is not "Return")
                         {
                             throw new Exception($"Cannot assign value to Literals at line {Current.Line}");
                         }
@@ -1310,6 +1364,7 @@ namespace Automa.Source.Core
                         Console.WriteLine("[Debug] Current Token: {0}",CT.ToString());
                     }
 
+                    // argument parse
                     if(parseArgs && CT is not LexerType.Token_RParen)
                     {
                         string val = Current.GetContent();
@@ -1331,36 +1386,51 @@ namespace Automa.Source.Core
 
                     // Expression Handling
 
-                    if (CT is LexerType.Token_RParen && (parseExpression && depth is 0))
+                    if (parseExpression && depth is 0)
                     {
-
-                        expr = ParseExpression(expression); // Determine Expression
-
-                        if (CB is "If") // add Block nodes before  the next token comes;
+                        if (CT is LexerType.Token_LParen)  // add paren and increase deptth
                         {
-                            NodeBuilder.AddNode(new IfBlock(expr));
+                            pdepth++;
+                            expression.Add(Current);
+                            continue;
                         }
-                        else if (CB is "Elif")
+                        else if (CT is LexerType.Token_RParen)   // same here but decrease on every closing
                         {
-                            NodeBuilder.AddNode(new Elif(expr));
-                        }else if(CB is "While")
-                        {
-                            NodeBuilder.AddNode(new WhileBlock(expr));
+                            if (pdepth > 0)   // decrease only when pdepth is gt 0
+                            {
+                                pdepth--;
+                                expression.Add(Current);
+                                continue;
+                            }
+                            else  // finally parse if not
+                            {
+                                expr = ParseExpression(expression); // Determine Expression
+                                if (CB is "If") // add Block nodes before the next token comes;
+                                {
+                                    NodeBuilder.AddNode(new IfBlock(expr));
+                                }
+                                else if (CB is "Elif")
+                                {
+                                    NodeBuilder.AddNode(new Elif(expr));
+                                }
+                                else if (CB is "While")
+                                {
+                                    NodeBuilder.AddNode(new WhileBlock(expr));
+                                }
+
+                                parseExpression = false;
+                                expression.Clear();
+                                continue;
+                            }
                         }
-
-                        parseExpression = false;
-                        expression.Clear();
-                        continue;
-                    }
-                    
-
-                    if (parseExpression && CT is not LexerType.Token_RParen && depth is 0)
-                    {
-                        expression.Add(Current);
-                        continue;
+                        else // add any other tokens
+                        {
+                            expression.Add(Current);
+                            continue;
+                        }
                     }
 
-                    if(isArith) // Arithmetic Assignment Handler
+                    if (isArith) // Arithmetic Assignment Handler
                     {
                         if (isAssign)
                         {

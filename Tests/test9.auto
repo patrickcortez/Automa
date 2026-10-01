@@ -1,0 +1,10 @@
+ # Always Functions
+
+Function AlwaysFive(n){
+	Five="90";
+	Return Five;
+}
+
+value=AlwaysFive(100);
+
+Write("$value");

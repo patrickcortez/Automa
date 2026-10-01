@@ -1,0 +1,17 @@
+# Function with Params
+
+Function something(cheezy){
+	Write("$cheezy");
+
+	Return cheezy;
+}
+
+Write("Parameter test");
+
+value=Read("Enter Something");
+
+value=something(value);
+
+Write("Return test: $value");
+
+Write("Parameter test done!");

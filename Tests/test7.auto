@@ -1,0 +1,12 @@
+# Functions
+
+Function something(){
+	Write("hello from function");
+}
+#manifold="test";
+
+Write("Function Test!");
+
+something();
+
+Write("Test Concluded!");

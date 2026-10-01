@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using static Automa.Source.Utility.Utils;
 using ExpOperand = (string Content, string Type);
 
-// implement function call parsing in logical expression and assignment, =P
+// implement fc's in Nested blocks
 
 namespace Automa.Source.Core
 {

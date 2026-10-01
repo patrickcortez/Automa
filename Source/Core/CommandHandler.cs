@@ -44,17 +44,10 @@ namespace Automa.Source.Core
             },
             {
 
-                "version", (string[] args) => { Print("Automa 0.1.0"); return 0;  } // Current Version of Automa
+                "version", (string[] args) => { Print("Automa 0.8.0"); return 0;  } // Current Version of Automa
             }
 
         };
-
-
-        private async Task<int> Exitc(int code)
-        {
-            await Task.Delay(1000);
-            return code;
-        }
 
         public int Start()
         {

@@ -219,8 +219,27 @@ namespace Automa.Source.Core
                     EqualTo eq = new EqualTo(new LiteralExpression(new AutomaString(lcontent)), new LiteralExpression( new AutomaString(rcontent)));
 
 
+                    if (left.Type is "Int")
+                    {
+                        eq = eq with { Left = new LiteralExpression(new AutomaInteger(int.Parse(lcontent))) };
+                    }
 
-                    if(left.Type is "FunctionCall")
+                    if (right.Type is "Int")
+                    {
+                        eq = eq with { Right = new LiteralExpression(new AutomaInteger(int.Parse(rcontent))) };
+                    }
+
+                    if (left.Type is "Bool")
+                    {
+                        eq = eq with { Left = new LiteralExpression(new AutomaBoolean(bool.Parse(lcontent))) };
+                    }
+
+                    if (right.Type is "Bool")
+                    {
+                        eq = eq with { Right = new LiteralExpression(new AutomaBoolean(bool.Parse(lcontent))) };
+                    }
+
+                    if (left.Type is "FunctionCall")
                     {
                         eq = eq with { Left = new FunctionExpression(new AutomaFunction(left.Content, Pargs)) };
                     }
@@ -266,6 +285,26 @@ namespace Automa.Source.Core
                 {
                     NotEqualTo nexpr = new NotEqualTo(new LiteralExpression(new AutomaString(lcontent)), new LiteralExpression(new AutomaString(rcontent)));
 
+                    if (left.Type is "Int")
+                    {
+                        nexpr = nexpr with { Left = new LiteralExpression(new AutomaInteger(int.Parse(lcontent))) };
+                    }
+
+                    if (right.Type is "Int")
+                    {
+                        nexpr = nexpr with { Right = new LiteralExpression(new AutomaInteger(int.Parse(rcontent))) };
+                    }
+
+                    if(left.Type is "Bool")
+                    {
+                        nexpr = nexpr with { Left = new LiteralExpression(new AutomaBoolean(bool.Parse(lcontent))) };
+                    }
+
+                    if (right.Type is "Bool")
+                    {
+                        nexpr = nexpr with { Right = new LiteralExpression(new AutomaBoolean(bool.Parse(lcontent))) };
+                    }
+
                     if (left.Type is "FunctionCall")
                     {
                         nexpr = nexpr with { Left = new FunctionExpression(new AutomaFunction(left.Content, Pargs)) };
@@ -307,6 +346,17 @@ namespace Automa.Source.Core
                 }else if(Operator is "GT")
                 {
                     GreaterThan nexpr = new GreaterThan(new LiteralExpression(new AutomaString(lcontent)), new LiteralExpression(new AutomaString(rcontent)));
+
+
+                    if (left.Type is "Int")
+                    {
+                        nexpr = nexpr with { Left = new LiteralExpression(new AutomaInteger(int.Parse(lcontent))) };
+                    }
+
+                    if (right.Type is "Int")
+                    {
+                        nexpr = nexpr with { Right = new LiteralExpression(new AutomaInteger(int.Parse(rcontent))) };
+                    }
 
                     if (left.Type is "FunctionCall")
                     {
@@ -351,6 +401,16 @@ namespace Automa.Source.Core
                 {
                     LessThan nexpr = new LessThan(new LiteralExpression(new AutomaString(lcontent)), new LiteralExpression(new AutomaString(rcontent)));
 
+                    if (left.Type is "Int")
+                    {
+                        nexpr = nexpr with { Left = new LiteralExpression(new AutomaInteger(int.Parse(lcontent))) };
+                    }
+
+                    if (right.Type is "Int")
+                    {
+                        nexpr = nexpr with { Right = new LiteralExpression(new AutomaInteger(int.Parse(rcontent))) };
+                    }
+
                     if (left.Type is "FunctionCall")
                     {
                         nexpr = nexpr with { Left = new FunctionExpression(new AutomaFunction(left.Content, Pargs)) };
@@ -394,6 +454,17 @@ namespace Automa.Source.Core
                 {
                     GTE nexpr = new GTE(new LiteralExpression(new AutomaString(lcontent)), new LiteralExpression(new AutomaString(rcontent)));
 
+
+                    if (left.Type is "Int")
+                    {
+                        nexpr = nexpr with { Left = new LiteralExpression(new AutomaInteger(int.Parse(lcontent))) };
+                    }
+
+                    if (right.Type is "Int")
+                    {
+                        nexpr = nexpr with { Right = new LiteralExpression(new AutomaInteger(int.Parse(rcontent))) };
+                    }
+
                     if (left.Type is "FunctionCall")
                     {
                         nexpr = nexpr with { Left = new FunctionExpression(new AutomaFunction(left.Content, Pargs)) };
@@ -436,6 +507,16 @@ namespace Automa.Source.Core
                 else if (Operator is "LTE")
                 {
                     LTE nexpr = new LTE(new LiteralExpression(new AutomaString(lcontent)), new LiteralExpression(new AutomaString(rcontent)));
+
+                    if (left.Type is "Int")
+                    {
+                        nexpr = nexpr with { Left = new LiteralExpression(new AutomaInteger(int.Parse(lcontent))) };
+                    }
+
+                    if (right.Type is "Int")
+                    {
+                        nexpr = nexpr with { Right = new LiteralExpression(new AutomaInteger(int.Parse(rcontent))) };
+                    }
 
                     if (left.Type is "FunctionCall")
                     {
@@ -500,16 +581,26 @@ namespace Automa.Source.Core
                         inParen = false,
                         parseExpression = false,
                         isAssign = false,
+                        ParseArgs=false,
                         IsReturn = false;
                 int depth = 0, pdepth = 0; // brace depth and parenthesis depth
 
                 bool isArith = false;
 
-                string CurrentInstruction = "";
+                string CurrentInstruction = "", Function_Name="";
                 (string value, string type) CurrentContent = ("", "");
 
                 List<LexerToken> Toks = LexTok.Skip(StartingIndex).ToList();
                 List<LexerToken> ArithmeticTokens = new();
+                List<Parameter> Params = new();
+
+                void ParamClear()
+                {
+                    if (Params.Count is 0) return;
+
+                    Params.Clear();
+                }
+
                 LexerToken? Peek = null;
                 Return? CR = null;
 
@@ -561,7 +652,40 @@ namespace Automa.Source.Core
                         continue;
                     }
 
+                    if(ParseArgs && CurrentType is not LexerType.Token_RParen)
+                    {
+                        string content = Current.GetContent();
 
+                        if(CurrentType is LexerType.Token_Comma) // ,
+                        {
+                            continue;
+                        }
+
+                        if (CurrentType is LexerType.TokenString or LexerType.Token_Identifier) // var , n , x ...
+                        {
+                            Params.Add(new(new AutomaString(content),(CurrentType is LexerType.TokenString)?VariableType.String:VariableType.Identifier));
+                        }else if(CurrentType is LexerType.TokenInt)  // 123
+                        {
+                            Params.Add(new(new AutomaInteger(int.Parse(content)), VariableType.Int));
+                        }else if(CurrentType is LexerType.TokenBool)  // true or false
+                        {
+                            Params.Add(new(new AutomaBoolean(bool.Parse(content)), VariableType.Boolean));
+                        }
+                        continue;
+                    }
+
+                    if(CurrentType is LexerType.Token_LParen && Function_Name is not "")
+                    {
+                        ParseArgs = true;
+                        continue;
+                    }
+                    else if(CurrentType is LexerType.Token_RParen && Function_Name is not "")
+                    {
+                        ParseArgs = false;
+
+                        Bob.AddNode(new AssignInstruction(new FunctionCall(Function_Name,(isAssign)? CurrentInstruction : null,Params)));
+                        continue;
+                    }
 
 
                     // Determine if we're entering an Expression
@@ -1926,21 +2050,19 @@ namespace Automa.Source.Core
                     {
                         prevTok = CT;
                         continue;
-                    }else if(CT is LexerType.Token_Increment or LexerType.Token_Decrement)
+                    }
+                    else if (CT is LexerType.Token_Increment or LexerType.Token_Decrement)
                     {
-                        prevTok = CT;
-
-                        if(prevTok is not LexerType.Token_Identifier)
+                        if (prevTok is not LexerType.Token_Identifier)
                         {
-                            throw new Exception($"Invalid use of Unary Assignment at line {Current.Line}");
+                            throw new Exception($"Invalid use of Unary Assignment at line {Current.Line}, previous is: {prevTok}");
                         }
-
-                        NodeBuilder.AddNode(new AssignInstruction(new UnaryAssign(CI, (CT is LexerType.Token_Increment) ? UnaryKind.Increment : UnaryKind.Decrement)));
-
+                        prevTok = CT;
+                        NodeBuilder.AddNode(new AssignInstruction(new UnaryAssign(CI, (CT is LexerType.Token_Increment) ? UnaryKind.Increment : UnaryKind.Decrement)), inBlock);
                         CI = "";
                         continue;
                     }
-                   
+
                     prevTok = CT;
                 }
 

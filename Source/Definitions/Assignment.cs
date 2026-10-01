@@ -17,7 +17,7 @@ namespace Automa.Source.Definitions
     {
         public void UpdateScope(List<Variable> Scope)
         {
-            Variable? Result = Scope.FirstOrDefault();
+            Variable? Result = Scope.FirstOrDefault(ex => ex.name == target);
             IValue res = Result.value;
 
             if (Result is null)
@@ -44,12 +44,11 @@ namespace Automa.Source.Definitions
                 }
 
                 integ = integ with { value = val };
-
-                Result = Result with { value = integ };
+                Result = Result with { value = new AutomaInteger(integ.value) };
                 return;
-            }                           
+            }
 
-
+            throw new Exception("Cannot increment a non integer");
         }
     }
 

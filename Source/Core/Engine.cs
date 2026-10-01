@@ -23,8 +23,10 @@ namespace Automa.Source.Core
          */
 
          // TODO:
-         // Lex: ==,!=,>= and <=
-         // properly parse Comparators and remove toggling.
+         // - Implement `let` keyword, for: let n = 100; for assignment
+         // - Move Write, Run and Read as Functions instead of instructions.
+         // - Rewrite NodeBuilder class as a instance based class instead of a static class.
+         // - Implement: Copy, Create, Delete and Move.
 
         private string[] keyWords = ["If", "Elif","Else","Write","Run","Read","While","Function","Return"];
         private string lastIdent = "";

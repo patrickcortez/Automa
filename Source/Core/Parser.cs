@@ -933,6 +933,8 @@ namespace Automa.Source.Core
                                 CR = new(new AutomaString(CurrentContent.value), VariableType.Identifier);
                             }
 
+                            Bob.AddNode(new ReturnInstruction(CR));
+
                             continue;
                         }
                         else

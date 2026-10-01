@@ -105,6 +105,8 @@ namespace Automa.Source.Definitions
  
     internal record WriteInstruction(string Content, bool isIdent = false) : Instruction;
 
+    internal record ReturnInstruction(Return value) : Instruction;
+
     // Variable Definition   
 
     internal record Variable(string name, IValue value, VariableType type = VariableType.String, (List<Parameter>? Arguments, Return? type)? FunctionCall = null);

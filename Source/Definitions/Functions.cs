@@ -54,7 +54,7 @@ namespace Automa.Source.Definitions
             }
  
 
-            Executor execute = new(Body);
+            Executor execute = new(Body,null,returnVal);
 
             return execute.Start(false, Args, Scope);
         }

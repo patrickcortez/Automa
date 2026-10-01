@@ -1,6 +1,7 @@
 ﻿using Automa.Source.Utility;
 using Automa.Source.Definitions;
 using static Automa.Source.Utility.Utils;
+using System.Runtime.CompilerServices;
 
 
 // Implement function calls and returns
@@ -73,7 +74,7 @@ namespace Automa.Source.Core
 
                                 Variable newVariable = var.variable;
                                 Variable? findVariable = FindVariable(newVariable.name,Variables);
-                                Variable? FindValue = FindVariable((string)newVariable.value.Eval(), Variables);
+                                Variable? FindValue = FindVariable((newVariable.value.Eval() is AutomaString str)? str.value : "", Variables);
 
                                 if(findVariable is not null)
                                 {
@@ -254,6 +255,51 @@ namespace Automa.Source.Core
 
                             Compare(Variables);
                             break;
+                        case ReturnInstruction returning:
+
+                            if (isdebug)
+                            {
+                                Console.WriteLine("[DEBUG] Running return instruction");
+                            }
+
+                            switch (returning.value.value)
+                            {
+                                case AutomaString str:
+
+                                    if(returning.value.type is VariableType.Identifier)
+                                    {
+                                        Variable? target = Variables.FirstOrDefault(ex => ex.name == str.value);
+
+                                        if(target is null)
+                                        {
+                                            throw new Exception($"Variable {str.value} doesn't exist");
+                                        }
+
+                                        int index =  Variables.IndexOf(target);
+
+                                        ret = ret with { value = new AutomaString((string)target.value.Eval(Variables)) };
+                                        break;
+                                    }
+
+                                    ret = ret with { value = new AutomaString(str.value) };
+                                break;
+                                case AutomaInteger integ:
+                                    ret = ret with { value = new AutomaInteger(integ.value) };
+                                break;
+
+                                case AutomaBoolean botoma:
+                                    ret = ret with { value = new AutomaBoolean(botoma.value) };
+                                break;
+
+                                //case AutomaFunction func:
+
+                                //    ret. =  func.Eval<object>(Variables) };
+
+                                //    break;
+                            }
+
+                            break;
+
                         default:
                             break;
 

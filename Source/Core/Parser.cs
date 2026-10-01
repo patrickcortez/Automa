@@ -169,16 +169,16 @@ namespace Automa.Source.Core
 
                             if(NPM is LexerType.Token_Identifier)
                             {
-                                Args.Add(new(content, VariableType.Identifier)); 
+                                Args.Add(new(new AutomaString(content), VariableType.Identifier)); 
                             }else if(NPM is LexerType.TokenInt)
                             {
-                                Args.Add(new(content, VariableType.Int));
+                                Args.Add(new(new AutomaString(content), VariableType.Int));
                             }else if(NPM is LexerType.TokenString)
                             {
-                                Args.Add(new(content, VariableType.String));
+                                Args.Add(new(new AutomaString(content), VariableType.String));
                             }else if(NPM is LexerType.TokenBool)
                             {
-                                Args.Add(new(content, VariableType.Boolean));
+                                Args.Add(new(new AutomaString(content), VariableType.Boolean));
                             }
 
                             skip++;
@@ -1113,7 +1113,18 @@ namespace Automa.Source.Core
                     List<Variable> nlist = new();
                     foreach(Parameter arg in args)
                     {
-                        nlist.Add(new(arg.value,new AutomaString(""),arg.type));
+
+                        if(arg.type is VariableType.String or VariableType.Identifier)
+                        {
+                            nlist.Add(new((arg.value is AutomaString str) ? str.value : throw new Exception("Arg name can only be a string"), new AutomaString(""), arg.type));
+                        }else if(arg.type is VariableType.Int)
+                        {
+                            nlist.Add(new((arg.value is AutomaString str) ? str.value : throw new Exception("Arg name can only be a string"), new AutomaInteger(0), arg.type));
+                        }else if(arg.type is VariableType.Boolean)
+                        {
+                            nlist.Add(new((arg.value is AutomaString str) ? str.value : throw new Exception("Arg name can only be a string"), new AutomaBoolean(false), arg.type));
+                        }
+
                     }
 
                     return nlist;
@@ -1181,9 +1192,9 @@ namespace Automa.Source.Core
 
                         if (CT is LexerType.Token_Identifier)
                         {
-                            args.Add(new(val,VariableType.Identifier));
+                            args.Add(new(new AutomaString(val),VariableType.Identifier));
                         } else if (CT is LexerType.TokenInt or LexerType.TokenString) {
-                            args.Add(new(val, (CT is LexerType.TokenInt) ? VariableType.Int : VariableType.String));
+                            args.Add(new(new AutomaString(val), (CT is LexerType.TokenInt) ? VariableType.Int : VariableType.String));
                         } else if (CT is LexerType.Token_Comma)
                         {
                             continue;

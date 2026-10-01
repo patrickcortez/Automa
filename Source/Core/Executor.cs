@@ -277,11 +277,29 @@ namespace Automa.Source.Core
 
                                         int index =  Variables.IndexOf(target);
 
-                                        ret = ret with { value = new AutomaString((string)target.value.Eval(Variables)) };
+                                        if(target.value is AutomaString stri)
+                                        {
+                                            ret.value = new AutomaString(stri.value);
+                                        }
+                                        else if(target.value is AutomaInteger inte)
+                                        {
+                                            ret.value = new AutomaInteger(inte.value);
+                                        }
+                                        else if(target.value is AutomaBoolean abo)
+                                        {
+                                            ret.value = new AutomaBoolean(abo.value);
+                                        }else if(target.value is AutomaFunction func)
+                                        {
+                                            Return tmp = (Return)func.Eval(Variables);
+
+                                            ret.value = tmp.value;
+                                        }
+
+                                        
                                         break;
                                     }
 
-                                    ret = ret with { value = new AutomaString(str.value) };
+                                    ret.value =  new AutomaString(str.value);
                                 break;
                                 case AutomaInteger integ:
                                     ret = ret with { value = new AutomaInteger(integ.value) };

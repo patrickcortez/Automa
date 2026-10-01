@@ -1,13 +1,20 @@
 ﻿using Automa.Source.Core;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Automa.Source.Definitions
 {
 
     // Functions
-    internal record Return(IValue value, VariableType type); // Function return
+    internal record Return // Function return
+    {
+        public IValue value { get; set; }
+        public VariableType type { get; set; }
+
+        public Return(IValue value, VariableType type)
+        {
+            this.value = value;
+            this.type = type;
+        }
+    }
 
     // function definition
     internal record Function(Return returnVal, List<Variable> Args) : Block
@@ -28,26 +35,28 @@ namespace Automa.Source.Definitions
                         Console.WriteLine($"Current Parameter: {par.value} with type {par.type}");
                     }
 
-                switch (CT)
-                {
-                    case VariableType.Int:
-                        Args[pos] = Args[pos] with { type = CT, value = new AutomaInteger(int.Parse(par.value)) };
-                        break;
-                    case VariableType.Boolean:
-                        Args[pos] = Args[pos] with { type = CT, value = new AutomaBoolean(bool.Parse(par.value)) };
-                        break;
-                    case VariableType.String:
+                    switch (par.value)
+                    {
+                        case AutomaInteger inte:
+                            Args[pos] = Args[pos] with { type = CT, value = new AutomaInteger(inte.value) };
+                            break;
+                        case AutomaBoolean abo:
+                            Args[pos] = Args[pos] with { type = CT, value = new AutomaBoolean(abo.value) };
+                            break;
+                        case AutomaString str:
 
-                        Args[pos] = Args[pos] with { type = CT, value = new AutomaString(par.value) };
-                        break;
-                    case VariableType.Identifier:
-                        Variable? Result = Scope.FirstOrDefault(ex => ex.name == par.value);
+                            if(par.type is VariableType.Identifier)
+                            {
+                                Variable? Result = Scope.FirstOrDefault(ex => ex.name == str.value);
 
-                        Args[pos] = Args[pos] with { type = Result.type, value = Result.value };
+                                Args[pos] = Args[pos] with { type = Result.type, value = Result.value };
+                                break;
+                            }
 
-                        break;
+                            Args[pos] = Args[pos] with { type = CT, value = new AutomaString(str.value) };
+                            break;
 
-                }
+                    }
 
                 pos++;
             }
@@ -62,5 +71,5 @@ namespace Automa.Source.Definitions
 
     }
 
-    internal record Parameter(string value, VariableType type);
+    internal record Parameter(IValue value, VariableType type);
 }

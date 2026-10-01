@@ -110,17 +110,15 @@ namespace Automa.Source.Core
 
                             if(ctype is LexerType.Token_Identifier)
                             {
-                                p.Add(new(current.GetContent(), VariableType.Identifier));
+                                p.Add(new(new AutomaString(current.GetContent()), VariableType.Identifier));
                                 
                             }else if(ctype is LexerType.TokenInt)
                             {
-                                p.Add(new(current.GetContent(),VariableType.Int));
-                            }else if(ctype is LexerType.TokenString)
+                                p.Add(new(new AutomaInteger(int.Parse(current.GetContent())),VariableType.Int));
+                            }
+                            else
                             {
-                                p.Add(new(current.GetContent(), VariableType.String));
-                            }else if(ctype is LexerType.TokenBool)
-                            {
-                                p.Add(new(current.GetContent(),VariableType.Boolean));
+                                throw new Exception("Invalid types in Arithmetic");
                             }
                             
                             

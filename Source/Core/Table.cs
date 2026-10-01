@@ -28,7 +28,7 @@ namespace Automa.Source.Core
 
             int exitc= target.ExecuteBlock(param,Scope,isdebug);
 
-            if(exitc is not 1)
+            if(exitc is not 0)
             {
                 return null;
             }

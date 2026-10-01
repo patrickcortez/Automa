@@ -17,34 +17,19 @@ namespace Automa.Source.Definitions
     {
         public void UpdateScope(List<Variable> Scope)
         {
-            Variable? Result = Scope.FirstOrDefault(ex => ex.name == target);
-            IValue res = Result.value;
+            int at = Scope.FindIndex(ex => ex.name == target);
 
-            if (Result is null)
+            if (at < 0)
             {
                 return;
             }
 
-            if (Result.value is not AutomaInteger)
+            if (Scope[at].value is AutomaInteger integ)
             {
-                return;
-            }
+                int val = (kind is UnaryKind.Increment) ? integ.value + 1 : integ.value - 1;
 
-            if(res is AutomaInteger integ)
-            {
-                int val = integ.value;
-
-                if (kind is UnaryKind.Increment)
-                {
-                    val++;
-                }
-                else
-                {
-                    val--;
-                }
-
-                integ = integ with { value = val };
-                Result = Result with { value = new AutomaInteger(integ.value) };
+                
+                Scope[at] = Scope[at] with { value = new AutomaInteger(val), type = VariableType.Int };
                 return;
             }
 
@@ -74,12 +59,8 @@ namespace Automa.Source.Definitions
                 return;
             }
 
-            if(Result.value is AutomaInteger integ)
-            {
-                integ = integ with { value = val };
-                Result = Result with { value = integ,type = VariableType.Int };
-                
-            }
+            int idx = Scope.FindIndex(e => e.name == target);
+            Scope[idx] = Result with { value = new AutomaInteger(val), type = VariableType.Int };
 
 
 

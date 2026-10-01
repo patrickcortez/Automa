@@ -120,7 +120,7 @@ namespace Automa.Source.Definitions
                 _ => new AutomaNull() // impossible to reach anyways =P
             };
 
-            return Lval.Eval() == Rval.Eval();
+            return Equals(Lval.Eval(),Rval.Eval());
         }
 
     }
@@ -144,7 +144,7 @@ namespace Automa.Source.Definitions
                 _ => new AutomaNull()
             };
 
-            return Lval.Eval() != Rval.Eval();
+            return !Equals(Lval.Eval(), Rval.Eval());
         }
 
 

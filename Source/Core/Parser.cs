@@ -82,7 +82,7 @@ namespace Automa.Source.Core
                     {
                         PrevType = CT;
 
-                        if(Next.Value.TokenType is LexerType.Token_LParen)
+                        if(Next?.TokenType is LexerType.Token_LParen)
                         {
                             Funcname = Current.GetContent();
                             continue;
@@ -1631,11 +1631,11 @@ namespace Automa.Source.Core
 
                             if (CI is "")
                             {
-                                NodeBuilder.AddNode(new AssignInstruction(new FunctionCall(FN, null, AddParams())));
+                                NodeBuilder.AddNode(new AssignInstruction(new FunctionCall(FN, null, AddParams())),inBlock);
                             }
                             else
                             {
-                                NodeBuilder.AddNode(new AssignInstruction(new FunctionCall(FN,CI,AddParams())));
+                                NodeBuilder.AddNode(new AssignInstruction(new FunctionCall(FN,CI,AddParams())),inBlock);
                             }
 
 
@@ -1647,7 +1647,6 @@ namespace Automa.Source.Core
                             CI = "";
                             validParen = false;
                             isAssign = false;
-                            inBlock = false;
                             continue;
                         }
 

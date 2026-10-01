@@ -80,7 +80,8 @@ namespace Automa.Source.Core
             int peek = pos + 1;
 
             LexerToken tok = t[pos];
-            LexerToken next = t[peek];
+            LexerType? nextType = (peek < t.Length) ? t[peek].TokenType : null;
+
 
             switch (tok.TokenType) // token determinant
             {
@@ -91,7 +92,7 @@ namespace Automa.Source.Core
                 case LexerType.Token_Identifier:
                     string func_name = string.Empty;
 
-                    if(next.TokenType is LexerType.Token_LParen)
+                    if(nextType is LexerType.Token_LParen)
                     {
 
                         func_name = tok.GetContent();

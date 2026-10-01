@@ -1162,7 +1162,7 @@ namespace Automa.Source.Core
                         Peek = _Tokens[i + 1];
 
                         // Arithmetic toggler
-                        if((Peek.Value.TokenType is LexerType.Token_Add or LexerType.Token_Minus or LexerType.Token_Multiply or LexerType.Token_Divide && CT is LexerType.TokenInt or LexerType.Token_Identifier && isAssign && !isArith) || (Peek.Value.TokenType is LexerType.TokenInt or LexerType.Token_Identifier && CT is LexerType.Token_LParen && isAssign && !isArith)) // 2 + or -
+                        if((Peek.Value.TokenType is LexerType.Token_Add or LexerType.Token_Minus or LexerType.Token_Multiply or LexerType.Token_Divide && CT is LexerType.TokenInt or LexerType.Token_Identifier && isAssign && !isArith) || (Peek.Value.TokenType is LexerType.TokenInt or LexerType.Token_Identifier && CT is LexerType.Token_LParen && isAssign && !isArith && FN is "")) // 2 + or -, might change the Fn is "" toggle
                         {
                             isArith = true;
                         }

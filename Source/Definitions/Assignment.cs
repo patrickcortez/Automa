@@ -1,4 +1,4 @@
-﻿using Automa.Source.Core;
+using Automa.Source.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -90,10 +90,49 @@ namespace Automa.Source.Definitions
 
     internal record FunctionCall(string name, string? target = null, List<Parameter>? Params = null) : AssignType
     {
-        public int Invoke(List<Variable> Scope)
+        public int Invoke(List<Variable>? Scope,bool isdebug = false)
         {
 
+            if (isdebug)
+            {
+                Console.WriteLine("[DEBUG] Current Variables in scope for function call {0}:",name);
+                if(Scope is not null)
+                {
+                    Scope.ForEach(item => Console.WriteLine(item));
+                }
+
+            }
+
             if (target is null) // expression
+            {
+
+                if (isdebug)
+                {
+                    Console.WriteLine("[DEBUG] Executing targetless func call with: ");
+
+                    if(Params is not null)
+                    {
+                        if(Params.Count is 0)
+                        {
+
+                            Console.WriteLine("[DEBUG] There is no parameters in the function");
+                        }
+
+                        Params.ForEach(e => Console.WriteLine(e));
+                    }
+                    else
+                    {
+                        Console.WriteLine("[DEBUG] Parameters are null");
+                    }
+
+
+                }
+
+                FunctionTable.RunFunc(name, Params, Scope,isdebug);
+                return 0;
+            }
+
+            if(Scope is null)
             {
                 FunctionTable.RunFunc(name, Params, Scope);
                 return 0;
@@ -101,6 +140,11 @@ namespace Automa.Source.Definitions
 
             Variable? Target = Scope.FirstOrDefault(ex => ex.name == target);
             Return? result = FunctionTable.RunFunc(name, Params, Scope);
+
+            if (result is null)
+            {
+                return 0;
+            }
 
             if (Target is null)
             {

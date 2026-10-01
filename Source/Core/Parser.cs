@@ -1,4 +1,4 @@
-﻿using Automa.Source.Definitions;
+using Automa.Source.Definitions;
 using System.ComponentModel.DataAnnotations;
 using static Automa.Source.Utility.Utils;
 using ExpOperand = (string Content, string Type);
@@ -1194,7 +1194,7 @@ namespace Automa.Source.Core
 
                     // Expression Handling
 
-                    if (CT is LexerType.Token_RParen && (parseExpression && depth is 0) || (FN is not ""))
+                    if (CT is LexerType.Token_RParen && (parseExpression && depth is 0))
                     {
 
                         expr = ParseExpression(expression); // Determine Expression
@@ -1392,6 +1392,7 @@ namespace Automa.Source.Core
                     {
                         prevTok = CT;
 
+
                         if (isAssign && inParen)
                         {
                             throw new Exception($"Cannot Assign inside parenthesis! Error on Line: {Current.Line}");
@@ -1399,9 +1400,21 @@ namespace Automa.Source.Core
 
                         string ident = Current.GetContent();
 
-                        if(CB is "Function")
+                        if(Peek.Value.TokenType is LexerType.Token_LParen)
                         {
-                            FN = ident;
+                            CB = "Function";
+                           
+                        }
+
+                        if(CB is "Function" && FN is "")  // if its a function call
+                        {
+                            FN = new(ident);
+
+                            if (isdebug)
+                            {
+                                Console.WriteLine("Detected Function Call: {0}", ident);
+                            }
+
                             continue;
                         }
 
@@ -1473,6 +1486,12 @@ namespace Automa.Source.Core
 
                         if(CB == "Function")
                         {
+
+                            if (isdebug)
+                            {
+                                Console.WriteLine("[DEBUG] Registering function call with name: {0} with target: {1}", FN,CI);
+                            }
+
                             if (CI is "")
                             {
                                 NodeBuilder.AddNode(new AssignInstruction(new FunctionCall(FN, null, AddParams())));
@@ -1489,6 +1508,8 @@ namespace Automa.Source.Core
                             CB = "";
                             FN = "";
                             CI = "";
+                            validParen = false;
+                            isAssign = false;
                             inBlock = false;
                             continue;
                         }
@@ -1497,7 +1518,7 @@ namespace Automa.Source.Core
                         {
                             if (!validParen)
                             {
-                                throw new Exception($"Missing Left parenthesis on Line {Current.Line}");
+                                throw new Exception($"Missing Left parenthesis on Line {Current.Line}, instruction: {CI}");
                             }
 
                             if (inBlock && depth == 1)
@@ -1610,6 +1631,32 @@ namespace Automa.Source.Core
                             }
 
                         }
+                        else if (validParen && !isAssign && FN is not "" and not "None") // standalone targetless functions
+                        {
+                            // Standalone function call: identifier(...);
+
+                            if (isdebug)
+                            {
+                                Console.WriteLine("Registering function call with name {0}", FN);
+                            }
+
+                            if (inBlock && depth is 1)
+                            {
+                                NodeBuilder.AddNode(new AssignInstruction(new FunctionCall(FN, null, AddParams())), inBlock);
+                            }
+                            else if (!inBlock && depth is 0)
+                            {
+                                NodeBuilder.AddNode(new AssignInstruction(new FunctionCall(FN, null, AddParams())));
+                            }
+
+                            // reset
+                            args.Clear();
+                            
+                            CI = string.Empty;
+                            CC = ("", "");
+                            validParen = false;
+                            continue;
+                        }
                         else
                         {
                             VariableType _type = VariableType.String;
@@ -1631,6 +1678,9 @@ namespace Automa.Source.Core
                             }
 
                             string varname = CI;
+
+
+
 
                             if (CC.type is "Read")
                             {
@@ -1790,10 +1840,16 @@ namespace Automa.Source.Core
 
                         if(FN is not "")
                         {
+                            if (isdebug)
+                            {
+                                Console.WriteLine("[DEBUG] Adding function {0} to table", FN);
+                            }
                             FunctionTable.Add(FN,ParseStatement<Function>(Current, out int skip, LexerType.Token_RBrace, FN, AddArgs()));
                             args.Clear();
                             FN = "";
+                            CB = "";
                             inBlock = false;
+                            inFunc = false;
 
                             if(skip > 0)
                             {

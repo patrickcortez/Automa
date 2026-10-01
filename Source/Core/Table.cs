@@ -15,7 +15,7 @@ namespace Automa.Source.Core
 
         public static Function GetFunc(string name) => Functions[name];
 
-        public static Return? RunFunc(string name,List<Parameter> param,List<Variable> Scope)
+        public static Return? RunFunc(string name,List<Parameter> param,List<Variable> Scope,bool isdebug=false)
         {
 
             if (!Functions.ContainsKey(name))
@@ -26,7 +26,7 @@ namespace Automa.Source.Core
             Function target = Functions[name];
 
 
-            int exitc= target.ExecuteBlock(param,Scope);
+            int exitc= target.ExecuteBlock(param,Scope,isdebug);
 
             if(exitc is not 1)
             {

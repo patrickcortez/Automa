@@ -47,7 +47,7 @@ namespace Automa.Source.Core
                     switch (Current)
                     {
                         case WriteInstruction write:
-
+                            
                             if (isdebug)
                             {
                                 Console.WriteLine("[Debug] Executing Write");
@@ -176,10 +176,12 @@ namespace Automa.Source.Core
                             {
                                 if (isdebug)
                                 {
-                                    Console.WriteLine("[DEBUG] Function Call");
+                                    Console.WriteLine(" [DEBUG] Function Call");
+                                    Console.WriteLine(" [DEBUG] With variables:");
+                                    Variables.ForEach(item =>  Console.WriteLine(item));
                                 }
 
-                                FA.Invoke(Scope: Variables);
+                                FA.Invoke(Variables,isdebug);
                             }
 
                             break;

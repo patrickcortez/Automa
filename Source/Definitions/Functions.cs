@@ -12,12 +12,21 @@ namespace Automa.Source.Definitions
     // function definition
     internal record Function(Return returnVal, List<Variable> Args) : Block
     {
-        public int ExecuteBlock(List<Parameter> Param, List<Variable> Scope)
+        public int ExecuteBlock(List<Parameter>? Param, List<Variable>? Scope,bool isdebug=false)
         {
+            if(Param is not null)
+            {
             int pos = 0;
+
+
             foreach (var par in Param) // parse parameters
             {
                 VariableType CT = par.type;
+
+                    if (isdebug)
+                    {
+                        Console.WriteLine($"Current Parameter: {par.value} with type {par.type}");
+                    }
 
                 switch (CT)
                 {
@@ -42,6 +51,8 @@ namespace Automa.Source.Definitions
 
                 pos++;
             }
+            }
+ 
 
             Executor execute = new(Body);
 

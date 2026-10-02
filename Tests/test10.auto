@@ -1,0 +1,22 @@
+# Function in Blocks
+
+Function Say(){
+	Write("Hello!");
+}
+
+Write("Function call inside a block Begin:");
+
+var=0;
+
+While(var < 10){
+	Say();
+	var++;
+}
+
+If(var == 10){
+	Write("A little Extra");
+	Say();
+	Write("inside if!");
+}
+
+Write("Test Concluded!");

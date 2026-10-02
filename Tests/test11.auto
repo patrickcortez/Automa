@@ -1,0 +1,9 @@
+# Functions in Arithmetic:
+
+Function Number(){
+	Return 10;
+}
+
+var = 10 + Number();
+
+Write("The number is $var");

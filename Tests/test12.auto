@@ -1,0 +1,12 @@
+# Functions in Expression
+
+Function AlwaysAccept(){
+	Return True;
+}
+
+If(AlwaysAccept() == True){
+	Write("It works!");
+}
+Else{
+	Write("It Doesn't =(");
+}

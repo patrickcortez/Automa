@@ -145,9 +145,9 @@ namespace Automa.Source.Utility
                 return match.Value;
             });
 
-            string formatted = Regex.Unescape(expanded); // format all the escape codes
 
-            return formatted;
+
+            return expanded;
 
         }
 

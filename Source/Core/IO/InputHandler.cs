@@ -6,11 +6,12 @@ using System.Text;
 
 namespace Automa.Source.Core.IO
 {
+ 
 
     // Automa Input handler for CLI
     internal static class InputHandler
     {
-
+        private const string Tab = "    ";  // 4 spaces
         public static string ReadLine()
         {
             
@@ -64,8 +65,35 @@ namespace Automa.Source.Core.IO
                 switch (current.Key)
                 {
                     case ConsoleKey.Enter:  // add a newline and return input
+
+                        if (selected)
+                        {
+                            selected = false;
+                            Redraw();
+                        }
+
                         Console.WriteLine();
                         return input.ToString();
+
+                    case ConsoleKey.Tab: // \t handling: 4 spacing
+                        if (selected)
+                        {
+                            selected = false;
+                            Redraw();
+                        }
+
+                        input.Insert(cursor, Tab); // store tab in buffer
+                        cursor += Tab.Length;   //  + 4
+
+                        
+                        Console.Write(input.ToString(cursor - Tab.Length, input.Length - (cursor - Tab.Length)));
+
+                        
+                        Console.SetCursorPosition(
+                            Console.CursorLeft - (input.Length - cursor),
+                            Console.CursorTop
+                        );
+                        break;
 
                     case ConsoleKey.LeftArrow:
                         if (cursor > 0)
@@ -166,26 +194,23 @@ namespace Automa.Source.Core.IO
 
                             }
 
-                            input.Remove(cursor - 1, 1);
-                            cursor--;
+                            // determine if tab or space
+                            int count = (cursor >= Tab.Length &&
+                                         input.ToString(cursor - Tab.Length, Tab.Length) == Tab)
+                                        ? Tab.Length : 1;
+
+                            input.Remove(cursor - count, count);
+                            cursor -= count;
 
 
 
-                            // move left
-                            Console.SetCursorPosition(
-                                Console.CursorLeft - 1,
-                                Console.CursorTop
-                            );
-
-                            // rewrite the curr line
+                            Console.SetCursorPosition(Console.CursorLeft - count, Console.CursorTop);
                             Console.Write(input.ToString(cursor, input.Length - cursor));
+                            Console.Write(new string(' ', count));
 
-                            // remove remaining old chars
-                            Console.Write(' ');
-
-                            // add 1 to left since we added as
+                           
                             Console.SetCursorPosition(
-                                Console.CursorLeft - (input.Length - cursor + 1),
+                                Console.CursorLeft - (input.Length - cursor + count),
                                 Console.CursorTop
                             );
                         }

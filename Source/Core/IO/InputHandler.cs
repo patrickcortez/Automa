@@ -13,6 +13,7 @@ namespace Automa.Source.Core.IO
 
         public static string ReadLine()
         {
+            
             StringBuilder input = new();
             int cursor = 0,scroll=0;
             bool selected = false;
@@ -20,41 +21,32 @@ namespace Automa.Source.Core.IO
 
             void Redraw(bool erase = false)
             {
+
                 Console.SetCursorPosition(
                     Math.Max(0, Console.CursorLeft - cursor),
                     Console.CursorTop
-                    );
+                );
 
-
-
-                if (selected) // highlight text in cyan and magenta on select
-                {
-                    Console.BackgroundColor = ConsoleColor.Cyan;
-                    Console.ForegroundColor = ConsoleColor.DarkMagenta;
-                }
 
                 if (erase) // erase all in the buffer and reset cursor to start
                 {
                     Console.Write(new string(' ', input.Length));
-                    Console.ResetColor();
-
                     int orig = input.Length; // save original size
                     input.Clear();  // clear buffer
                     cursor = 0;   // reset cursor/pointer
                     selected = false;
 
-                    // reset back to the start
-                    Console.SetCursorPosition(
-                        Math.Max(0, Console.CursorLeft - orig),  // math max to be safe.
-                        Console.CursorTop
-                        ); 
-
+                    Console.SetCursorPosition(Console.CursorLeft - orig, Console.CursorTop); // return to start.
                 }
                 else
                 {
+                    if (selected) // highlight text in cyan and magenta on select
+                    {
+                        Console.BackgroundColor = ConsoleColor.Cyan;
+                        Console.ForegroundColor = ConsoleColor.DarkMagenta;
+                    }
                     Console.Write(input.ToString());
                     Console.ResetColor();
-
                     Console.SetCursorPosition(
                     Math.Max(0, Console.CursorLeft - (input.Length - cursor)),
                     Console.CursorTop
@@ -79,10 +71,7 @@ namespace Automa.Source.Core.IO
                         if (cursor > 0)
                         {
                             cursor--;
-                            Console.SetCursorPosition( // naviggate left of the string input
-                                Console.CursorLeft - 1,
-                                Console.CursorTop
-                            );
+                            Console.SetCursorPosition(Console.CursorLeft - 1, Console.CursorTop);
                         }
                         break;
 
@@ -90,10 +79,7 @@ namespace Automa.Source.Core.IO
                         if (cursor < input.Length)
                         {
                             cursor++;
-                            Console.SetCursorPosition(
-                                Console.CursorLeft + 1,
-                                Console.CursorTop
-                            );
+                            Console.SetCursorPosition(Console.CursorLeft + 1, Console.CursorTop);
                         }
                         break;
 
@@ -233,7 +219,7 @@ namespace Automa.Source.Core.IO
                         {
                                 
                                 selected = true;
-                                cursor = input.Length;
+                               // cursor = input.Length;
                                 Redraw();
                             break;
 
@@ -272,10 +258,10 @@ namespace Automa.Source.Core.IO
                         // Only insert printable characters
                         if (!char.IsControl(current.KeyChar))
                         {
-
                             if (selected)
                             {
-                                selected = false;
+                                selected = false;                             
+                                Redraw();
                             }
 
                             input.Insert(cursor, (current.Modifiers is ConsoleModifiers.Shift)? char.ToUpper(current.KeyChar):current.KeyChar);
@@ -284,8 +270,11 @@ namespace Automa.Source.Core.IO
                             // Redraw from insertion point
                             Console.Write(input.ToString(cursor - 1, input.Length - cursor + 1));
 
-                            // Move cursor back to insertion point
-                            Redraw();
+                            Console.SetCursorPosition( // reset to original pos by calc diff between in len and curse
+                            Console.CursorLeft - (input.Length - cursor),
+                            Console.CursorTop
+                        );
+
                         }
 
                         break;

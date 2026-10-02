@@ -55,7 +55,7 @@ namespace Automa.Source.Core
                                 Console.WriteLine("[Debug] Executing Write");
                             }
 
-                            Console.WriteLine(ExpandVariables(write.Content,Variables));
+                            Console.Write(ExpandVariables(write.Content,Variables));
                             break;
                         case AssignInstruction assignment:
 

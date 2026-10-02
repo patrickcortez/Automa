@@ -1,6 +1,7 @@
 ﻿using Automa.Source.Core.Shell;
 using System;
 using System.Collections.Generic;
+using TextCopy;
 using System.Text;
 
 namespace Automa.Source.Core.IO
@@ -13,11 +14,60 @@ namespace Automa.Source.Core.IO
         public static string ReadLine()
         {
             StringBuilder input = new();
-            int cursor = 0,scroll=History.prev.Count-1;
+            int cursor = 0,scroll=0;
+            bool selected = false;
+
+
+            void Redraw(bool erase = false)
+            {
+                Console.SetCursorPosition(
+                    Math.Max(0, Console.CursorLeft - cursor),
+                    Console.CursorTop
+                    );
+
+
+
+                if (selected) // highlight text in cyan and magenta on select
+                {
+                    Console.BackgroundColor = ConsoleColor.Cyan;
+                    Console.ForegroundColor = ConsoleColor.DarkMagenta;
+                }
+
+                if (erase) // erase all in the buffer and reset cursor to start
+                {
+                    Console.Write(new string(' ', input.Length));
+                    Console.ResetColor();
+
+                    int orig = input.Length; // save original size
+                    input.Clear();  // clear buffer
+                    cursor = 0;   // reset cursor/pointer
+                    selected = false;
+
+                    // reset back to the start
+                    Console.SetCursorPosition(
+                        Math.Max(0, Console.CursorLeft - orig),  // math max to be safe.
+                        Console.CursorTop
+                        ); 
+
+                }
+                else
+                {
+                    Console.Write(input.ToString());
+                    Console.ResetColor();
+
+                    Console.SetCursorPosition(
+                    Math.Max(0, Console.CursorLeft - (input.Length - cursor)),
+                    Console.CursorTop
+                    );
+                }
+
+            }
 
             while (true)
             {
                 ConsoleKeyInfo current = Console.ReadKey(true);
+
+                
 
                 switch (current.Key)
                 {
@@ -77,6 +127,7 @@ namespace Automa.Source.Core.IO
                                 Console.CursorLeft -  cursor,
                                 Console.CursorTop
                                 );
+                            scroll--;
 
                             input.Clear();
                             input.Append(History.prev[scroll]);
@@ -88,7 +139,7 @@ namespace Automa.Source.Core.IO
                                 Console.CursorTop
                                 );
 
-                            scroll--;
+                            
 
                         }
                         break;
@@ -120,8 +171,19 @@ namespace Automa.Source.Core.IO
                     case ConsoleKey.Backspace: // backspace key
                         if (cursor > 0) // if cursor is gt 0 move back by 1 per key press
                         {
+
+                            if (selected)
+                            {
+                                selected = false;
+                                Redraw(true);
+                                break;
+
+                            }
+
                             input.Remove(cursor - 1, 1);
                             cursor--;
+
+
 
                             // move left
                             Console.SetCursorPosition(
@@ -167,12 +229,55 @@ namespace Automa.Source.Core.IO
                         //if (current.Modifiers == ConsoleModifiers.Control)
                         //    break;
 
+                         if(current.Key is ConsoleKey.A && current.Modifiers.HasFlag(ConsoleModifiers.Control))
+                        {
+                                
+                                selected = true;
+                                cursor = input.Length;
+                                Redraw();
+                            break;
 
+
+                        }
+
+
+                         if(current.Key is ConsoleKey.C && current.Modifiers.HasFlag(ConsoleModifiers.Control)) // copy to clipboard
+                        {
+                            ClipboardService.SetText(input.ToString());
+
+                            if (selected)
+                            {
+                                selected = false;
+                                Redraw();
+                            }
+                           
+                        }
+                         
+
+                         if(current.Key is ConsoleKey.V && current.Modifiers.HasFlag(ConsoleModifiers.Control)) // paste to buffer
+                        {
+                            int orig = input.Length;
+                            input.Clear();
+                            input.Append(ClipboardService.GetText()); // append whole text
+
+                            Console.SetCursorPosition(
+                                Math.Max(0, Console.CursorLeft - orig),
+                                Console.CursorTop
+                                );
+
+                            Console.Write(input.ToString()); // print pasted text
+                        }
 
 
                         // Only insert printable characters
                         if (!char.IsControl(current.KeyChar))
                         {
+
+                            if (selected)
+                            {
+                                selected = false;
+                            }
+
                             input.Insert(cursor, (current.Modifiers is ConsoleModifiers.Shift)? char.ToUpper(current.KeyChar):current.KeyChar);
                             cursor++;
 
@@ -180,10 +285,7 @@ namespace Automa.Source.Core.IO
                             Console.Write(input.ToString(cursor - 1, input.Length - cursor + 1));
 
                             // Move cursor back to insertion point
-                            Console.SetCursorPosition(
-                                Console.CursorLeft - (input.Length - cursor),
-                                Console.CursorTop
-                            );
+                            Redraw();
                         }
 
                         break;

@@ -11,7 +11,7 @@ namespace Automa.Source.Definitions
 
     internal record VariableAssign(Variable variable) : AssignType; //for exit code
 
-    internal record ReadAssign(string target, string Prompt) : AssignType; //
+    internal record ReadAssign(string target, string Prompt) : AssignType; // input
 
     internal record UnaryAssign(string target, UnaryKind kind) : AssignType
     {
@@ -141,7 +141,7 @@ namespace Automa.Source.Definitions
 
     //Processes
 
-    internal record RunAssignment((string Target, string Cmd) Properties) : AssignType
+    internal record RunAssignment((string Target, string Cmd) Properties,bool ReturnOutput=false) : AssignType
     {
         public int Run()
         {

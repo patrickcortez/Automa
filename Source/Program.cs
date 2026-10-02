@@ -12,10 +12,7 @@ public static class Automa
     {
         try
         {
-            Console.CancelKeyPress += (_, e) =>
-            {
-                e.Cancel = true;
-            };   // surpress ctrl c
+            Console.TreatControlCAsInput = true;
 
             if (args.Length < 1)
             {

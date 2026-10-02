@@ -39,6 +39,11 @@ namespace Automa.Source.Core
             return ret;
         }
 
+        public static void Purge()
+        {
+            Functions.Clear();
+        }
+
     }
 
 }

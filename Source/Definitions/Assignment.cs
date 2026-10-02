@@ -156,7 +156,7 @@ namespace Automa.Source.Definitions
                 Arguments = args,
                 CreateNoWindow = true,
                 RedirectStandardError = true,
-                RedirectStandardOutput = true
+                RedirectStandardOutput = true,
             };
 
 

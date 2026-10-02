@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Automa.Source.Definitions;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -41,6 +42,7 @@ namespace Automa.Source.Core.Shell
                 Commands comms = new(input);
 
                 int exit = await comms.Start();
+                FunctionTable.Purge(); // Erase existing funtions after input is parsed
 
                 if (exit != 0)
                 {

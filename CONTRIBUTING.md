@@ -19,5 +19,5 @@ on why the change was made.
 
 ## License
 
-By contributing to this project you By submitting contributions to this project,
+By submitting contributions to this project,
 you agree that your work will be licensed under the terms of the GNU General Public License v3.0

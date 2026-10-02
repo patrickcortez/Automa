@@ -1,7 +1,5 @@
-﻿using Automa.Source.Utility;
-using Automa.Source.Definitions;
+﻿using Automa.Source.Definitions;
 using static Automa.Source.Utility.Utils;
-using System.Runtime.CompilerServices;
 
 
 // Implement function calls and returns
@@ -40,7 +38,10 @@ namespace Automa.Source.Core
                     Hold.Clear();
                 }
 
-
+                if (isdebug)
+                {
+                    Console.WriteLine("[DEBUG] Executing AST...");
+                }
                 
                 while(Current != null)
                 {
@@ -60,14 +61,14 @@ namespace Automa.Source.Core
 
                             if (isdebug)
                             {
-                                Console.Write("[Debug] Executing Assignment with");
+                                Console.Write("[Debug] Executing Assignment with ");
                             }
                             
                             if (assignment.type is VariableAssign var)
                             {
                                 if (isdebug)
                                 {
-                                    Console.WriteLine("Variable assignment type");
+                                    Console.WriteLine("Variable assignment type, Variable: {0}",var);
                                 }
 
                                 // will be moved to VariableAssign's Evaluate()
@@ -90,7 +91,26 @@ namespace Automa.Source.Core
                                     break;
                                 }
 
-                                Variable declared = new(newVariable.name, newVariable.value, newVariable.type);
+                                IValue cleaned = newVariable.value;
+
+                                if(newVariable.type is VariableType.Identifier)
+                                {
+                                    if(newVariable.value is AutomaString nstr)
+                                    {
+                                       Variable res= Variables.FirstOrDefault(ex => ex.name == nstr.value) ?? throw new Exception($"Cannot assign non-existent variable {nstr.value}");
+
+                                        cleaned = res.value switch
+                                        {
+                                            AutomaString nstr2 => new AutomaString(nstr2.value),
+                                            AutomaInteger nint2 => new AutomaInteger(nint2.value),
+                                            AutomaBoolean nbool => new AutomaBoolean(nbool.value),
+                                            AutomaFunction func => new AutomaFunction(func.name, func.args),
+                                            _ => new AutomaNull()
+                                        };
+                                    }
+                                }
+
+                                Variable declared = new(newVariable.name, cleaned, newVariable.type);
                                 
                                 if(FindValue is not null)
                                 {

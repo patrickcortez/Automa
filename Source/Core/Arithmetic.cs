@@ -1,7 +1,4 @@
 ﻿using Automa.Source.Definitions;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 // Automa Arithmetic Handler
 // With Multiplication and Division
@@ -118,6 +115,9 @@ namespace Automa.Source.Core
                             }else if(ctype is LexerType.TokenInt)  // integer parameters: 123
                             {
                                 p.Add(new(new AutomaInteger(int.Parse(current.GetContent())),VariableType.Int));
+                            }else if (ctype is LexerType.TokenString or LexerType.TokenBool) // string or boolean parameters
+                            {
+                                p.Add(new((ctype is LexerType.TokenString) ? new AutomaString(current.GetContent()) : new AutomaBoolean(bool.Parse(current.GetContent().ToLower())), (ctype is LexerType.TokenString) ? VariableType.String : VariableType.Boolean));
                             }
                             else
                             {

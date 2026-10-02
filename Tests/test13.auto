@@ -1,0 +1,13 @@
+# Variable Test:
+
+var=10;
+
+Write("var is $var");
+
+mar=var;
+
+Write("mar is $mar");
+
+mar++;
+
+Write("var after: $var");

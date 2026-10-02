@@ -1,5 +1,4 @@
 using Automa.Source.Definitions;
-using System.ComponentModel.DataAnnotations;
 using static Automa.Source.Utility.Utils;
 using ExpOperand = (string Content, string Type);
 
@@ -1627,7 +1626,7 @@ namespace Automa.Source.Core
 
                         if (isAssign || inParen) // if identifier is in paren or right hand of the assignment ( Right )
                         {
-                            CC = (ident, "Identifier"); // current Content
+                            CC = (ident, "identifier"); // current Content
                         }
                         else // Left
                         {
@@ -1868,6 +1867,9 @@ namespace Automa.Source.Core
                             VariableType _type = VariableType.String;
                             IValue value = new AutomaString(CC.content);
 
+
+
+
                             if (CC.type is "int")
                             {
                                 _type = VariableType.Int;
@@ -1885,7 +1887,10 @@ namespace Automa.Source.Core
 
                             string varname = CI;
 
-
+                            if (isdebug)
+                            {
+                                Console.WriteLine("[DEBUG] Current detected var type: {0} , w/ name: {1}, with CCType: {2}",_type,varname,CC.type);
+                            }
 
 
                             if (CC.type is "Read")

@@ -59,9 +59,9 @@ namespace Automa.Source.Definitions
                 return -1;
             }
 
-            if (result.type is not VariableType.Int)                                           
+            if (result.value is not AutomaInteger)                                           
             {
-                return -1;
+                return -2;
             }
 
             return (int)result.value.Eval();

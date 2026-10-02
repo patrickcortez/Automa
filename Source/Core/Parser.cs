@@ -2135,7 +2135,7 @@ namespace Automa.Source.Core
                     prevTok = CT;
                 }
 
-                return NodeBuilder.Build();
+                return NodeBuilder.Build() ?? throw new Exception("Empty AST!");
             }catch(Exception ex)
             {
                 Console.WriteLine("Parsing Error; {0}", ex);

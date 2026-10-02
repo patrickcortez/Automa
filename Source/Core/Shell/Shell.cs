@@ -10,12 +10,12 @@ namespace Automa.Source.Core.Shell
 
         private void Print()
         {
-            Console.Write(">> ");
+            Console.Write("\e[0;33m>> \e[0m");
         }
 
         private void PrintBanner()
         {
-            string banner = @"Automa CLI v0.8.0";
+            string banner = "\e[0;96mAutoma\e[0m CLI v0.8.0";
             Console.WriteLine(banner + Environment.NewLine);
         }
 

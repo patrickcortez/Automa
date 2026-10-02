@@ -103,7 +103,7 @@ namespace Automa.Source.Core
 
         public static Instruction? Build()
         {
-            return AST.Copy();
+            return AST?.Copy() ?? new WriteInstruction("[\e[0;91mERROR\e[0m]: \e[0;93mUnknown Instruction\e[0m");
         }
     }
 }

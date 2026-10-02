@@ -1,4 +1,5 @@
-﻿using Automa.Source.Definitions;
+﻿using Automa.Source.Core.IO;
+using Automa.Source.Definitions;
 using System.Text.RegularExpressions;
 
 namespace Automa.Source.Utility
@@ -153,7 +154,7 @@ namespace Automa.Source.Utility
         public static string? Input(string Prompt) // grab user input during execution
         {
             Console.WriteLine(Prompt);
-            return Console.ReadLine();
+            return InputHandler.ReadLine();
         }
 
     }

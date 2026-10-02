@@ -18,6 +18,7 @@ each containing list of files that holds **Automa**'s functionality:
 *Core*			- Contains the core interpreter of **Automa**
 		
 		- Shell : Contains Automa's CLI
+		- I/O : Contains Automa's I/O handlers
 		- Lexer
 		- Parser
 		- Executor

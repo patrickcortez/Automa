@@ -12,7 +12,12 @@ public static class Automa
     {
         try
         {
-            if(args.Length < 1)
+            Console.CancelKeyPress += (_, e) =>
+            {
+                e.Cancel = true;
+            };   // surpress ctrl c
+
+            if (args.Length < 1)
             {
                 Shell shell = new();
                 await shell.Start();

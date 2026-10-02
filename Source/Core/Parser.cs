@@ -2125,7 +2125,7 @@ namespace Automa.Source.Core
                         prevTok = CT;
                         continue;
                     }
-                    else if (CT is LexerType.Token_Increment or LexerType.Token_Decrement)
+                    else if (CT is LexerType.Token_Increment or LexerType.Token_Decrement) // -- or ++
                     {
                         if (prevTok is not LexerType.Token_Identifier)
                         {

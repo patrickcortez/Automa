@@ -1,4 +1,5 @@
-﻿using Automa.Source.Definitions;
+﻿using Automa.Source.Core.IO;
+using Automa.Source.Definitions;
 using static Automa.Source.Utility.Utils;
 
 
@@ -55,7 +56,7 @@ namespace Automa.Source.Core
                                 Console.WriteLine("[Debug] Executing Write");
                             }
 
-                            Console.Write(ExpandVariables(write.Content,Variables));
+                            OutputHandler.Out(ExpandVariables(write.Content,Variables));  // expand variables and ansi before outputting
                             break;
                         case AssignInstruction assignment:
 

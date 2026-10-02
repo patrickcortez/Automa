@@ -1,4 +1,6 @@
-﻿namespace Automa.Source.Core.Shell
+﻿using Automa.Source.Core.IO;
+
+namespace Automa.Source.Core.Shell
 {
     internal class Shell
     {
@@ -6,12 +8,12 @@
 
         private void Print()
         {
-            Console.Write("\n\e[0;33m>> \e[0m");
+            OutputHandler.Out("\n\e[0;33m>> \e[0m");
         }
 
         private void PrintBanner()
         {
-            string banner = "\e[0;96mAutoma\e[0m CLI v0.8.0";
+            string banner = "\e[0;96mAutoma\e[0m CLI v0.8.0\nType \"\e[1;36mhelp\e[0m\" to get acquanted";
             Console.WriteLine(banner + Environment.NewLine);
         }
 
@@ -22,7 +24,7 @@
             {
 
                 Print();
-                string? input = ((input = Console.ReadLine()) is not null) ? input : null;
+                string? input = ((input = InputHandler.ReadLine()) is not null) ? input : null;
 
                 if (input is null)
                 {
@@ -44,7 +46,7 @@
                     Console.WriteLine("Command: {0} , failed");
                 }
 
-                
+                History.AddHistory(input);
 
             }
 

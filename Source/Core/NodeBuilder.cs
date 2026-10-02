@@ -51,6 +51,11 @@ namespace Automa.Source.Core
             AST = NewAST; // insert new
         }
 
+        public static void Detach()
+        {
+            AST = null;
+        }
+
         public static void AddNode(Instruction node,bool inBlock = false) // Add to the main branch or Block branch
         {
             if(AST is null)
@@ -98,7 +103,7 @@ namespace Automa.Source.Core
 
         public static Instruction? Build()
         {
-            return AST;
+            return AST.Copy();
         }
     }
 }

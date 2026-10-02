@@ -4,7 +4,7 @@
 > This project is still under development, more features will come. Interpreter may not be stable yet =P.
 
 **Automa** is a Simple Automation Language developed in C#. **Automa's** over all functionality is for
-automation in your machine, Automa has atleast 5 instructions for automation.
+automation in your machine, Automa has atleast 8 instructions for automation.
 
 > [!NOTE]
 > Always end your instructions in `;`.

@@ -30,7 +30,8 @@ namespace Automa.Source.Core
 
                     if (!Path.Exists(file)) // check file existence
                     {
-                        throw new FileNotFoundException($"{file} does not exist!");
+                        Console.Error.WriteLine($"{file} does not exist!");
+                        return 2;
                     }
 
                     if (Path.GetExtension(file)!=".auto")
@@ -56,8 +57,8 @@ namespace Automa.Source.Core
 
                 if (!Commands.ContainsKey(_cmd)) // Guard clause
                 {
-                    Console.Error.WriteLine("Command {0} is not a command", _cmd);
-                    return 1;
+                    //Console.Error.WriteLine("Command {0} is not a command", _cmd);
+                    return 2;
                 }
 
                 if(_args is null)

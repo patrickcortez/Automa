@@ -100,6 +100,8 @@ namespace Automa.Source.Definitions
     internal abstract record Instruction
     {
         public Instruction? Next { get; set; }
+
+        public Instruction Copy() => (Instruction)this.MemberwiseClone(); 
     }
 
  

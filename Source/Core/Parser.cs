@@ -2148,6 +2148,7 @@ namespace Automa.Source.Core
             try
             {
                 var Data = Parse(); // to be used
+                NodeBuilder.Detach(); // erase AST, so CLI wont execute OLD, instructs...
 
                 Executor exec = new(Data); // only pass instructions not the entire variables
                 

@@ -7,6 +7,9 @@
 [Parser] : Determines the instructions
  |
  V
+[COPY] : Perser passes a copy of the AST, then detaches the AST
+ |
+ V
 [Executor] : Executes all instructions
 
 

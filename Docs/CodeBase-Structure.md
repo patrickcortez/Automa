@@ -16,7 +16,8 @@ Inside the *Source* folder is the codebase of **Automa** which has 3 folders,
 each containing list of files that holds **Automa**'s functionality:
 
 *Core*			- Contains the core interpreter of **Automa**
-	
+		
+		- Shell : Contains Automa's CLI
 		- Lexer
 		- Parser
 		- Executor

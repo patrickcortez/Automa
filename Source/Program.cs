@@ -1,4 +1,5 @@
 ﻿using Automa.Source.Core;
+using Automa.Source.Core.Shell;
 
 namespace Automa.Source;
 
@@ -13,8 +14,8 @@ public static class Automa
         {
             if(args.Length < 1)
             {
-                CommandHandler run = new(_cmd: "help");
-                run.Start();
+                Shell shell = new();
+                await shell.Start();
                 return 0;
             }
             

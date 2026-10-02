@@ -1,11 +1,5 @@
 ﻿using Automa.Source.Definitions;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Net.Http.Headers;
-using System.Reflection.Metadata;
-using System.Runtime.InteropServices;
-using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Automa.Source.Utility
 {
@@ -130,24 +124,30 @@ namespace Automa.Source.Utility
             return null;
         }
 
+        public static string ExpandVariables(string Line,List<Variable> Variables) // expand any variable and escape codes in a string using Regex
+        { // formerly a simple Replace()
+
+            //  Console.WriteLine("Debug: Current line being Expanded: {0}", Line);
 
 
-        public static string ExpandVariables(string Line,List<Variable> Variables) // expand any variable in a string
-        {
-
-          //  Console.WriteLine("Debug: Current line being Expanded: {0}", Line);
-
-            foreach(Variable var in Variables)
+            string expanded = Regex.Replace(Line, @"\$([a-zA-Z_][a-zA-Z0-9_]*)", match => // expand all variable calls statring with: $, including numbers
             {
-                string Current = "$" + var.name;
+                string varname = match.Groups[1].Value;
 
-                if (Line.Contains(Current))
+                Variable? variable = Variables.Find(ex => ex.name == varname);
+
+                if (variable != null)
                 {
-                    Line = Line.Replace(Current, var.value.Eval().ToString());
+                    return variable.value.Eval().ToString()!;
                 }
-            }
 
-            return Line;
+                return match.Value;
+            });
+
+            string formatted = Regex.Unescape(expanded); // format all the escape codes
+
+            return formatted;
+
         }
 
         public static string? Input(string Prompt) // grab user input during execution

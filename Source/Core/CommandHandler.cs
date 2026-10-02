@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
-using System.Text;
-using static Automa.Source.Utility.Utils;
+﻿using static Automa.Source.Utility.Utils;
 
 namespace Automa.Source.Core
 {
@@ -19,6 +14,7 @@ namespace Automa.Source.Core
                 Print("version          - Displays current version of Automa");
                 Print("run <.auto>      - Runs a Automa script");
                 Print("help             - Displays this message");
+                Print("clear            - clears terminal screen");
                 return 0;
 
                 }
@@ -46,6 +42,9 @@ namespace Automa.Source.Core
             {
 
                 "version", (string[] args) => { Print("Automa 0.8.0"); return 0;  } // Current Version of Automa
+            },
+            {
+                "clear",(string[] args) => {Console.Clear(); return 0; }
             }
 
         };

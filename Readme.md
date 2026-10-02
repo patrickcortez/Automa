@@ -6,6 +6,8 @@
 **Automa** is a Simple Automation Language developed in C#. **Automa's** over all functionality is for
 automation in your machine, Automa has atleast 8 instructions for automation.
 
+![img](assets/cli1.png)
+
 > [!NOTE]
 > Always end your instructions in `;`.
 

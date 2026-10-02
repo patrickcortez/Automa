@@ -1,9 +1,4 @@
-﻿using Automa.Source.Definitions;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Automa.Source.Core.Shell
+﻿namespace Automa.Source.Core.Shell
 {
     internal class Shell
     {
@@ -11,7 +6,7 @@ namespace Automa.Source.Core.Shell
 
         private void Print()
         {
-            Console.Write("\e[0;33m>> \e[0m");
+            Console.Write("\n\e[0;33m>> \e[0m");
         }
 
         private void PrintBanner()

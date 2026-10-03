@@ -1,4 +1,5 @@
 using Automa.Source.Core;
+using Automa.Source.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -143,11 +144,13 @@ namespace Automa.Source.Definitions
 
     internal record RunAssignment((string Target, string Cmd) Properties,bool ReturnOutput=false) : AssignType
     {
-        public int Run()
+        public int Run(List<Variable>? Scope)
         {
             string[] cmdPart = Properties.Cmd.Split(' ', 2);
             string name = cmdPart[0];
             string args = cmdPart.Length > 1 ? cmdPart[1] : "";
+
+            args = Utils.ExpandVariables(args, Scope);
 
             Process proc = new();
             proc.StartInfo = new()

@@ -7,10 +7,34 @@
     <Nullable>enable</Nullable>
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <Title>Automa</Title>
+    <Authors>Tezzz </Authors>
+    <Description>An interpreter for Automating tasks around your computer.</Description>
+    <PackageReadmeFile>Readme.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/patrickcortez/Automa.git</RepositoryUrl>
+    <PackageTags>interpreter; automation;</PackageTags>
+    <PackAsTool>True</PackAsTool>
+    <PackageIcon>Automa.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="TextCopy" Version="6.2.1" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<None Include="assets\Automa.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+  <ItemGroup>
+    <None Update="assets\Automa.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="Readme.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -124,11 +124,25 @@ namespace Automa.Source.Core
                                             }
                                         }
 
-                                        Variables[vIndex] = Variables[vIndex] with { value = FindValue.value };
+                                        if(fcleaned is AutomaString pstr){
+
+                                            
+                                            pstr = pstr with { value = ExpandVariables(pstr.value, Variables) };
+                                            fcleaned = new AutomaString(pstr.value);
+                                        }
+
+                                        Variables[vIndex] = Variables[vIndex] with { value = fcleaned };
                                         break;
                                     }
 
-                                    Variables[vIndex]= Variables[vIndex] with { value = newVariable.value };
+                                    IValue clean = newVariable.value;
+                                    if (clean is AutomaString fallbackStr)
+                                    {
+                                        fallbackStr = fallbackStr with { value = ExpandVariables(fallbackStr.value, Variables) };
+                                        clean = new AutomaString(fallbackStr.value);
+                                    }
+
+                                    Variables[vIndex]= Variables[vIndex] with { value = clean };
                                     break;
                                 }
 
@@ -155,6 +169,15 @@ namespace Automa.Source.Core
                                             _ => new AutomaNull()
                                         };
                                     }
+                                }
+
+
+                                if (cleaned is AutomaString cstr)
+                                {
+
+
+                                    cstr = cstr with { value = ExpandVariables(cstr.value, Variables) };
+                                    cleaned = new AutomaString(cstr.value);
                                 }
 
                                 Variable declared = new(newVariable.name, cleaned, newVariable.type);
@@ -204,7 +227,7 @@ namespace Automa.Source.Core
 
                                 if(run.Properties.Target is null)
                                 {
-                                    run.Run();
+                                    run.Run(Variables);
                                     break;
                                 }
 
@@ -213,11 +236,11 @@ namespace Automa.Source.Core
                                 if(findVariable is not null)
                                 {
                                     int vIndex = Variables.IndexOf(findVariable);
-                                    Variables[vIndex] = Variables[vIndex] with { value = new AutomaInteger(run.Run()) };
+                                    Variables[vIndex] = Variables[vIndex] with { value = new AutomaInteger(run.Run(Variables)) };
                                     break;
                                 }
 
-                                Variables.Add(new(run.Properties.Target, new AutomaInteger(run.Run())));
+                                Variables.Add(new(run.Properties.Target, new AutomaInteger(run.Run(Variables))));
                                 break;
                             }
                             else if(assignment.type is ArithmeticAssign arith) // handle arithmetic

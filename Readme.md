@@ -180,8 +180,27 @@ To use **Automa** in the CommandLine, Simple do:
 
 ## Installation
 
-> [!NOTE]
-> To be added...
+Make sure you have *dotnet*.
+
+To install:
+
+```
+# install Automa from Nuget (global)
+dotnet tool install --global Automa --version 1.0.0
+
+# install Automa from Nuget (Local)
+dotnet tool install --local Automa --version 1.0.0
+
+```
+
+or compile the source directly:
+
+```bash
+# Build and Run Automa
+dotnet build && dotnet run
+```
+
+
 
 ## License
 

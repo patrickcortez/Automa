@@ -49,34 +49,43 @@ namespace Automa.Source.Core
                    // Cache.Variables = Variables;
                     switch (Current)
                     {
-                        case WriteInstruction write:
+                        case WriteInstruction write:  // Output
                             
                             if (isdebug)
                             {
                                 Console.WriteLine("[Debug] Executing Write");
                             }
 
+                            if(write.isIdent){
+                                Variable? res = Variables.Find(ex => ex.name == write.Content);
+
+                                OutputHandler.Out(res?.value.Eval().ToString() ?? throw new Exception($"Variable {write.Content} not found."));
+                                break;
+                            }
+
                             OutputHandler.Out(ExpandVariables(write.Content,Variables));  // expand variables and ansi before outputting
                             break;
-                        case AssignInstruction assignment:
+                        case AssignInstruction assignment:    // Variable Assignment
 
                             if (isdebug)
                             {
                                 Console.Write("[Debug] Executing Assignment with ");
                             }
                             
-                            if (assignment.type is VariableAssign var)
+                            if (assignment.type is VariableAssign var) // if its a Variable assignment
                             {
                                 if (isdebug)
                                 {
-                                    Console.WriteLine("Variable assignment type, Variable: {0}",var);
+                                    Console.WriteLine("Variable assignment type, Variable: {0} , with type: {1}",var,var.variable.type);
                                 }
+
+                               
 
                                 // will be moved to VariableAssign's Evaluate()
 
                                 Variable newVariable = var.variable;
                                 Variable? findVariable = FindVariable(newVariable.name,Variables);
-                                Variable? FindValue = FindVariable((newVariable.value.Eval() is AutomaString str)? str.value : "", Variables);
+                                Variable? FindValue = FindVariable((newVariable.value.Eval() is string str)? str : "", Variables);
 
                                 if(findVariable is not null)
                                 {
@@ -84,6 +93,37 @@ namespace Automa.Source.Core
 
                                     if(FindValue is not null)
                                     {
+
+
+                                        IValue fcleaned = FindValue.value;
+
+                                        if(isdebug){
+                                            Console.WriteLine("[DEBUG] Value found: {}",fcleaned);
+                                        }                                        
+
+                                        if (FindValue.type is VariableType.Identifier)
+                                        {
+
+                                            if (isdebug)
+                                            {
+                                                Console.WriteLine(" [DEBUG] Detected Identifier: {0}",fcleaned);
+                                            }
+
+                                            if (fcleaned is AutomaString nstr)
+                                            {
+                                                Variable res = Variables.FirstOrDefault(ex => ex.name == nstr.value) ?? throw new Exception($"Cannot assign non-existent variable {nstr.value}");
+
+                                                fcleaned = res.value switch
+                                                {
+                                                    AutomaString nstr2 => new AutomaString(nstr2.value),
+                                                    AutomaInteger nint2 => new AutomaInteger(nint2.value),
+                                                    AutomaBoolean nbool => new AutomaBoolean(nbool.value),
+                                                    AutomaFunction func => new AutomaFunction(func.name, func.args),
+                                                    _ => new AutomaNull()
+                                                };
+                                            }
+                                        }
+
                                         Variables[vIndex] = Variables[vIndex] with { value = FindValue.value };
                                         break;
                                     }
@@ -96,6 +136,12 @@ namespace Automa.Source.Core
 
                                 if(newVariable.type is VariableType.Identifier)
                                 {
+
+                                    if (isdebug)
+                                    {
+                                        Console.WriteLine(" [DEBUG] Detected Identifier: {0}",cleaned);   
+                                    }
+
                                     if(newVariable.value is AutomaString nstr)
                                     {
                                        Variable res= Variables.FirstOrDefault(ex => ex.name == nstr.value) ?? throw new Exception($"Cannot assign non-existent variable {nstr.value}");
@@ -122,7 +168,7 @@ namespace Automa.Source.Core
 
                                 Variables.Add(declared);
                                 break;
-                            }else if(assignment.type is ReadAssign read)
+                            }else if(assignment.type is ReadAssign read) // input assignment
                             {
                                 if (isdebug)
                                 {
@@ -149,7 +195,7 @@ namespace Automa.Source.Core
                                 Variables.Add(newVariable);
                                 break;
                             } 
-                            else if (assignment.type is RunAssignment run)
+                            else if (assignment.type is RunAssignment run) // external command
                             {
                                 if (isdebug)
                                 {

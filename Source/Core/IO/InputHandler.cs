@@ -119,8 +119,15 @@ namespace Automa.Source.Core.IO
                              Console.CursorLeft - cursor,
                              Console.CursorTop
                              );
+
+                            int pad = input.Length;
                             input.Clear();
                             input.Append(History.prev[scroll]);
+
+                            Console.Write(new string(' ', pad));
+                            
+                            Console.SetCursorPosition(Console.CursorLeft - pad, Console.CursorTop);
+                            
 
                             Console.Write(input.ToString());
 
@@ -143,8 +150,13 @@ namespace Automa.Source.Core.IO
                                 );
                             scroll--;
 
+                            int pad = input.Length;
                             input.Clear();
                             input.Append(History.prev[scroll]);
+
+                            Console.Write(new string(' ', pad));
+
+                            Console.SetCursorPosition(Console.CursorLeft - pad, Console.CursorTop);
 
                             Console.Write(input.ToString());
 

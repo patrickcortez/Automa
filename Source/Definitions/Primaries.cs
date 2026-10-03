@@ -104,7 +104,7 @@ namespace Automa.Source.Definitions
         public Instruction Copy() => (Instruction)this.MemberwiseClone(); 
     }
 
- 
+
     internal record WriteInstruction(string Content, bool isIdent = false) : Instruction;
 
     internal record ReturnInstruction(Return value) : Instruction;

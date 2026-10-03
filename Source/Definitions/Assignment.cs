@@ -139,7 +139,7 @@ namespace Automa.Source.Definitions
         }
     }
 
-    //Processes
+    //Process
 
     internal record RunAssignment((string Target, string Cmd) Properties,bool ReturnOutput=false) : AssignType
     {

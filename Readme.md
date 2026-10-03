@@ -1,4 +1,15 @@
-# Automa
+<div>
+
+<h1 Align="Center">Automa</h1>
+<img Align="Center" src="https://github.com/patrickcortez/Automa/blob/master/assets/Automa.png">
+
+<div Align="Center">
+<img alt="status" src="https://shields.io/badge/under-development-yellow">
+<img alt="status" src="https://shields.io/badge/Version-0.8.0-red">
+</div>
+</div>
+
+---
 
 > [!NOTE] 
 > This project is still under development, more features will come. Interpreter may not be stable yet =P.
@@ -24,7 +35,7 @@ The Following instructions of **Automa**:
 - **If** : If Block which can be nested
 - **Elif** : Elif/Else if Block
 - **Else** : Else Block
-- **Run** : Run a external command/application.
+- **Run** : Run a external command/application. (Has a boolean argument: true - returns stdout/err, false(default) - returns exit code)
 - **While** : for looping purposes
 - **Functions** : for making reusable blocks of code
 
@@ -153,7 +164,9 @@ Else
 Write("Nice Country!")
 }
 
-task = Run("cmd /c dir")
+task = Run("cmd /c dir") # returns exit code...
+
+task = Run("cmd /c ptr",True) # returns stdout/err result...
 
 Write("Result of Task $task")
 

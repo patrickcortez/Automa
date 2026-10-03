@@ -67,6 +67,7 @@ namespace Automa.Source.Core
                             
                                 Tokens.Add(new(LexerType.TokenBool,LineNo,value.ToLower()));
                                 Value.Clear();
+                                return;
                             }
 
                             Tokens.Add(new((int.TryParse(value, out _) ? LexerType.TokenInt : LexerType.TokenString ),LineNo,value));
@@ -144,10 +145,17 @@ namespace Automa.Source.Core
                             {
                                 string ident = identifier.ToString();
 
+                                
                                 if (keyWords.Contains(ident))
                                 {
                                     Tokens.Add(new(LexerType.Token_KeyWord, LineNo,ident));
                                     lastIdent = ident;
+                                    identifier.Clear();
+                                }
+                                else if (ident.Equals("True", StringComparison.OrdinalIgnoreCase) || ident.Equals("False", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    Tokens.Add(new(LexerType.TokenBool, LineNo, ident.ToLower()));
+                                    lastIdent = ident.ToLower();
                                     identifier.Clear();
                                 }
                                 else
@@ -233,7 +241,7 @@ namespace Automa.Source.Core
                                     {
                                         Tokens.Add(new(LexerType.TokenInt, LineNo, val));
                                     }
-                                    else if (bool.TryParse(val, out _))
+                                    else if (bool.TryParse(val.ToLower(), out _))
                                     { // Boolean: true or false
                                         Tokens.Add(new(LexerType.TokenBool, LineNo, val));
                                         Value.Clear();

@@ -602,6 +602,7 @@ namespace Automa.Source.Core
                         inParen = false,
                         parseExpression = false,
                         isAssign = false,
+                        stdout=false,
                         ParseArgs=false,
                         IsReturn = false;
                 int depth = 0, pdepth = 0; // brace depth and parenthesis depth
@@ -1017,7 +1018,7 @@ namespace Automa.Source.Core
 
 
                     }
-                    else if (CurrentType is LexerType.TokenString or LexerType.TokenInt) // "abc" or 123
+                    else if (CurrentType is LexerType.TokenString or LexerType.TokenInt or LexerType.TokenBool) // "abc" or 123
                     {
                         if (depth > 1)
                         {
@@ -1030,15 +1031,28 @@ namespace Automa.Source.Core
                         }
 
 
-                        if ((inParen && CurrentContent.type is "Run" or "Read")) // assuming the next is a R paren ')'
-                        {
-                            CurrentContent.value = Current.GetContent(); // store the arg of Run and Read
-                            continue;
-                        }
-
                         if (CurrentType is LexerType.TokenInt) // int 
                         {
                             CurrentContent = (Current.GetContent(), "int");
+                            continue;
+                        }
+
+                        if(CurrentType is LexerType.TokenBool){
+
+                            if(PrevTok is LexerType.Token_Comma){
+                                if(CurrentInstruction is "Run"){
+                                      
+                                    if(Current.GetContent().ToLower() is "true"){
+                                        stdout = true;
+                                    }else{
+                                        stdout = false;
+                                    }
+                                    continue;
+                                }
+                            }else{
+                                continue;
+                            }
+                            CurrentContent = (Current.GetContent(), "bool");
                             continue;
                         }
 
@@ -1084,10 +1098,11 @@ namespace Automa.Source.Core
                         }
                         else if (CurrentInstruction is "Run")
                         {
-                            Bob.AddNode(new AssignInstruction(new RunAssignment(("null", CurrentContent.value))));
+                            Bob.AddNode(new AssignInstruction(new RunAssignment(("null", CurrentContent.value),stdout)));
 
                             // reset
                             CurrentContent = ("", "");
+                            stdout = false;
                             CurrentInstruction = "";
                             isAssign = false;
 
@@ -1133,10 +1148,11 @@ namespace Automa.Source.Core
                             }
                             else if (CurrentContent.type is "Run")
                             {
-                                Bob.AddNode(new AssignInstruction(new RunAssignment((varname, CurrentContent.value))));
+                                Bob.AddNode(new AssignInstruction(new RunAssignment((varname, CurrentContent.value),stdout)));
 
                                 // reset
                                 CurrentContent = ("", "");
+                                stdout = false;
                                 CurrentInstruction = "";
                                 isAssign = false;
 
@@ -1275,6 +1291,7 @@ namespace Automa.Source.Core
                     isArith = false,
                     parseArgs = false,
                     inFunc = false,
+                    stdout=false,
                     isAssign = false;
                 int depth = 0, pdepth = 0; // if-block depth and parenthesis depth
                 string CI = "None"; // Current Instruction,
@@ -1811,12 +1828,13 @@ namespace Automa.Source.Core
                         {
                             if (inBlock && depth is 1)
                             {
-                                NodeBuilder.AddNode(new AssignInstruction((new RunAssignment(("null", CC.content)))), inBlock);
+                                NodeBuilder.AddNode(new AssignInstruction((new RunAssignment(("null", CC.content),stdout))), inBlock);
 
                                 //reset all before proceeding to the next
 
                                 CI = string.Empty; // erase CI for the next...
                                 CC = ("", "");
+                                stdout = false;
                                 validParen = false;
                                 isAssign = false;
                                 continue;
@@ -1824,10 +1842,10 @@ namespace Automa.Source.Core
 
                             if (!inBlock && depth is 0)
                             {
-                                NodeBuilder.AddNode(new AssignInstruction((new RunAssignment(("null", CC.content)))));
+                                NodeBuilder.AddNode(new AssignInstruction((new RunAssignment(("null", CC.content),stdout))));
 
                                 //reset all before proceeding to the next
-
+                                stdout = false;
                                 CI = string.Empty; // erase CI for the next...
                                 CC = ("", "");
                                 validParen = false;
@@ -1924,11 +1942,12 @@ namespace Automa.Source.Core
                             {
                                 if (inBlock && depth is 1)
                                 {
-                                    NodeBuilder.AddNode(new AssignInstruction(new RunAssignment((varname, CC.content))), inBlock);
+                                    NodeBuilder.AddNode(new AssignInstruction(new RunAssignment((varname, CC.content),stdout)), inBlock);
                                     //reset all before proceeding to the next
 
                                     CI = string.Empty; // erase CI for the next...
                                     CC = ("", "");
+                                    stdout = false;
                                     validParen = false;
                                     isAssign = false;
                                     continue;
@@ -1936,11 +1955,12 @@ namespace Automa.Source.Core
 
                                 if (!inBlock && depth is 0)
                                 {
-                                    NodeBuilder.AddNode(new AssignInstruction(new RunAssignment((varname, CC.content))), inBlock);
+                                    NodeBuilder.AddNode(new AssignInstruction(new RunAssignment((varname, CC.content),stdout)), inBlock);
                                     //reset all before proceeding to the next
 
                                     CI = string.Empty; // erase CI for the next...
                                     CC = ("", "");
+                                    stdout = false;
                                     validParen = false;
                                     isAssign = false;
                                     continue;
@@ -1998,25 +2018,57 @@ namespace Automa.Source.Core
                     }
                     else if (CT is LexerType.TokenString or LexerType.TokenInt or LexerType.TokenBool) // Integer,Boolean or String literals
                     {
-                        prevTok = CT;
-
-                        if ((isAssign || inParen) && CC.type is "Read" or "Run")
+                        if ((isAssign || inParen) && CC.type is "Read" or "Run") // if Assign is Run or Read
                         {
-                            CC.content = Current.GetContent();
+                            if (CT is LexerType.TokenBool) // for Args
+                            {
+
+                                if (isdebug)
+                                {
+                                    Console.WriteLine("[DEBUG] Current bool val: {0}", Current.GetContent());
+                                }
+
+                                if (prevTok is LexerType.Token_Comma)
+                                {
+                                    stdout = Current.GetContent().Equals("true", StringComparison.OrdinalIgnoreCase);
+                                }
+                            }
+                            else // return str if not boolean
+                            {
+                                CC.content = Current.GetContent();
+                            }
+
+                            prevTok = CT;
                             continue;
                         }
 
                         if (CT is LexerType.TokenInt)
                         {
-
                             CC = (Current.GetContent(), "int");
+                            prevTok = CT;
                             continue;
-                        }else if(CT is LexerType.TokenBool)
+                        }
+                        else if (CT is LexerType.TokenBool) // booleaan
                         {
+                            if (isdebug)
+                            {
+                                Console.WriteLine("[DEBUG] Current bool val: {0}", Current.GetContent());
+                            }
+                            // args for other functions
+                            if (prevTok is LexerType.Token_Comma)
+                            {
+                                stdout = Current.GetContent().Equals("true", StringComparison.OrdinalIgnoreCase);
+                                prevTok = CT;
+                                continue;
+                            }
+
                             CC = (Current.GetContent(), "bool");
+                            prevTok = CT;
+                            continue;
                         }
 
                         CC = (Current.GetContent(), "string");
+                        prevTok = CT;
                         continue;
                     }
                     else if (CT is LexerType.Token_Equal) // =
@@ -2134,6 +2186,9 @@ namespace Automa.Source.Core
                         prevTok = CT;
                         NodeBuilder.AddNode(new AssignInstruction(new UnaryAssign(CI, (CT is LexerType.Token_Increment) ? UnaryKind.Increment : UnaryKind.Decrement)), inBlock);
                         CI = "";
+                        continue;
+                    }else if(CT is LexerType.Token_Comma){
+                        prevTok = CT;
                         continue;
                     }
 

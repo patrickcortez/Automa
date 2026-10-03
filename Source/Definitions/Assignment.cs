@@ -144,6 +144,8 @@ namespace Automa.Source.Definitions
 
     internal record RunAssignment((string Target, string Cmd) Properties,bool ReturnOutput=false) : AssignType
     {
+        public string ProcOut { get; private set; } = "";
+        
         public int Run(List<Variable>? Scope)
         {
             string[] cmdPart = Properties.Cmd.Split(' ', 2);
@@ -151,6 +153,13 @@ namespace Automa.Source.Definitions
             string args = cmdPart.Length > 1 ? cmdPart[1] : "";
 
             args = Utils.ExpandVariables(args, Scope);
+
+            StringBuilder? Output = null;
+
+            if (ReturnOutput)
+            {
+                Output = new();
+            }
 
             Process proc = new();
             proc.StartInfo = new()
@@ -170,21 +179,22 @@ namespace Automa.Source.Definitions
 
                 proc.OutputDataReceived += (_, e) =>
                 {
-                    if (e.Data != null)
+                    if (e.Data is not null && Output is not null)
                     {
-                        //Do nothing
+                        Output.Append(e.Data.ToString());
                     }
                 };
 
                 proc.ErrorDataReceived += (_, e) =>
                 {
-                    if (e.Data != null)
+                    if (e.Data != null && Output is not null)
                     {
-                        //Do nothing
+                        Output.Append(e.Data.ToString());
                     }
                 };
 
                 proc.WaitForExit();
+                ProcOut = Output?.ToString() ?? "";
                 return proc.ExitCode;
             }
 

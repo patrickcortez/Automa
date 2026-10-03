@@ -240,7 +240,13 @@ namespace Automa.Source.Core
                                     break;
                                 }
 
-                                Variables.Add(new(run.Properties.Target, new AutomaInteger(run.Run(Variables))));
+                                int exit = run.Run(Variables);
+
+                                if(isdebug){
+                                    OutputHandler.Out($"[DEBUG] Return Out? {run.ReturnOutput}\n");
+                                }
+
+                                Variables.Add(new(run.Properties.Target, (run.ReturnOutput)? new AutomaString(run.ProcOut) : new AutomaInteger(exit)));
                                 break;
                             }
                             else if(assignment.type is ArithmeticAssign arith) // handle arithmetic

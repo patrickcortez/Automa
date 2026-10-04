@@ -42,3 +42,25 @@ elif()
 	   \[Variables]
 	   |
 	   \[Instructions]
+
+---
+
+Functions:
+
+Function ---> [Variables] # holds a scope
+|
+Instruction # Executes instructions
+|
+Return # returns a variable or literal
+
+
+---
+
+Loops
+
+[Expression]
+	|
+[Instruction] # executes instructions and updates scope.
+	|
+[Repeat] # repeats until false
+

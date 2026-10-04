@@ -30,7 +30,7 @@ namespace Automa.Source.Core.Shell
 
                 Engine Lexer = new(tmpfile);
 
-                exit = await Lexer.Start();
+                exit =  Lexer.Start();
 
                 File.Delete(tmpfile);
             }

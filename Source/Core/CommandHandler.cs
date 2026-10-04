@@ -4,7 +4,7 @@ namespace Automa.Source.Core
 {
     internal class CommandHandler(string _cmd, string[]? _args = null)
     {
-        private Dictionary<string, Func<string[], int>> Commands = new() // Dict of string and Func Delegates
+        private Dictionary<string, Func<string[],int>> Commands = new() // Dict of string and Func Delegates
         {
             { "help",  (string[] args) => { // Help of user convenience and a cli guide
 
@@ -20,7 +20,7 @@ namespace Automa.Source.Core
                 }
             },
             {
-                "run", (string[] args) => { // Run script;
+                "run",  (string[] args) => { // Run script;
                     string file = args[0];
                     string flag = (args.Length > 1)? args[1] : "";
 
@@ -36,7 +36,7 @@ namespace Automa.Source.Core
                     }
 
                     Engine engine = new(file,(flag=="-d")? true : false); // run script with debug checking
-                    return engine.Start(); 
+                    return  engine.Start(); 
                 }
             },
             {
@@ -44,7 +44,7 @@ namespace Automa.Source.Core
                 "version", (string[] args) => { Print("Automa 0.8.0"); return 0;  } // Current Version of Automa
             },
             {
-                "clear",(string[] args) => {Console.Clear(); return 0; }
+                "clear",  (string[] args) => {Console.Clear(); return 0; }
             }
 
         };

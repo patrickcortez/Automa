@@ -1030,7 +1030,7 @@ namespace Automa.Source.Core
                             throw new Exception($"Cannot assign value to Literals at line {Current.Line}");
                         }
 
-                        if (CurrentContent.type is "Read" or "Run")
+                        if ((isAssign || inParen) && (CurrentContent.type is "Read" or "Run" || CurrentInstruction is "Read" or "Run"))
                         {
                             if(PrevTok is LexerType.TokenBool)
                             {
@@ -1038,15 +1038,22 @@ namespace Automa.Source.Core
                                 {
                                     stdout = Current.GetContent().Equals("true", StringComparison.OrdinalIgnoreCase);
                                 }
-                                else
-                                {
-                                    // expand types, for now we continue;
+                            }else{
+                                
+                                if(Current.GetContent().ToLower() is "true" or "false"){
+                                    
+                                    if(isdebug){
+                                        Console.WriteLine("[DEBUG] Type: {0}", Current);
+                                    }
+                                    
+                                    stdout = Current.GetContent().Equals("true",StringComparison.OrdinalIgnoreCase);
+                                }else{
                                     CurrentContent.value = Current.GetContent();
                                 }
-                                PrevTok = CurrentType;
-                                continue;
-
+                                
                             }
+                            PrevTok = CurrentType;
+                            continue;
                         }
 
 
@@ -2196,7 +2203,7 @@ namespace Automa.Source.Core
                         NodeBuilder.AddNode(new AssignInstruction(new UnaryAssign(CI, (CT is LexerType.Token_Increment) ? UnaryKind.Increment : UnaryKind.Decrement)), inBlock);
                         CI = "";
                         continue;
-                    }else if(CT is LexerType.Token_Comma){
+                    }else if(CT is LexerType.Token_Comma){ // ,
                         prevTok = CT;
                         continue;
                     }

@@ -146,7 +146,7 @@ namespace Automa.Source.Definitions
     {
         public string ProcOut { get; private set; } = "";
         
-        public int Run(List<Variable>? Scope)
+        public  int Run(List<Variable>? Scope)
         {
             string[] cmdPart = Properties.Cmd.Split(' ', 2);
             string name = cmdPart[0];
@@ -181,15 +181,16 @@ namespace Automa.Source.Definitions
                 {
                     if (e.Data is not null && Output is not null)
                     {
-                        Output.Append(e.Data.ToString());
+                        Output.AppendLine(e.Data.ToString());
                     }
                 };
+
 
                 proc.ErrorDataReceived += (_, e) =>
                 {
                     if (e.Data != null && Output is not null)
                     {
-                        Output.Append(e.Data.ToString());
+                        Output.AppendLine(e.Data.ToString());
                     }
                 };
 

@@ -521,7 +521,7 @@ namespace Automa.Source.Core
         }
 
 
-        public int Start()
+        public  int Start()
         {
             try
             {
@@ -537,7 +537,7 @@ namespace Automa.Source.Core
                     return 1;
                 }
 
-                LexerToken[] toks = Tokenize() ?? [];
+                LexerToken[] toks =  Tokenize() ?? [];
                 
                 if(isdebug && toks.Length > 0)
                 {

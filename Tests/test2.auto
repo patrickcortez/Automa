@@ -1,13 +1,13 @@
-Write("Variable Assignment Test")
+Write("Variable Assignment Test");
 
-var = "Trump"
+var = "Trump";
 
-Write("Var old value $var")
+Write("Var old value $var");
 
-new = Read("Enter new value:")
+new = Read("Enter new value:");
 
-var = new
+var = new;
 
-Write("Var new value: $var")
+Write("Var new value: $var");
 
-Write("Test Done!")
+Write("Test Done!");

@@ -1,8 +1,6 @@
 ﻿using Automa.Source.Definitions;
-using System.Collections;
-using System.Text;
 using Automa.Source.Exceptions;
-using System.Transactions;
+using System.Text;
 using static Automa.Source.Utility.Utils;
 
 namespace Automa.Source.Core
@@ -25,11 +23,10 @@ namespace Automa.Source.Core
 
          // TODO:
          // - Implement `let` keyword, for: let n = 100; for assignment
-         // - Move Write, Run and Read as Functions instead of instructions.
          // - Rewrite NodeBuilder class as a instance based class instead of a static class.
          // - Implement: Copy, Create, Delete and Move.
 
-        private string[] keyWords = ["If", "Elif","Else","Write","Run","Read","While","Function","Return","Move","Copy"];
+        private string[] keyWords = ["If", "Elif","Else","Write","Run","Read","While","Function","Return","Move","Copy","Create","Delete"];
         private string lastIdent = "";
 
         private LexerToken[]? Tokenize() // Lexer & Tokenizer

@@ -41,7 +41,9 @@ The Following instructions of **Automa**:
 - **File System instructions** : instructions that are performed on the operating system with no external command call and is an assignment type. It returns an integer which is its exit code:
 
 	- *Copy* : Copy a Directory or file to a another directory: `var=Copy("Source","Destination");`
-	- *Move* : Moves a File or directort to another directory: `var=Move("Source","Destination");`
+	- *Move* : Moves a File or directory to another directory: `var=Move("Source","Destination");`
+	- *Create* : Create a File or directory: `var=Create("C:path/test.txt");`
+	- *Delete* : Delete a File or directory: `var=Delete("C:path/test.txt");`
 
 ## Assignment Types
 
@@ -60,6 +62,8 @@ The Following are the assignment types:
 - **File system operations** : Retuns exit-code of the operation.
 	- *Copy*
 	- *Move*
+	- *Create*
+	- *Delete*
 
 ## Logical Operators:
 

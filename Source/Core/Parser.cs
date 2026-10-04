@@ -893,6 +893,9 @@ namespace Automa.Source.Core
                             }else if(keyword is "Copy" or "Move"){
                                 CurrentContent.type = keyword;
                                 continue;
+                            }else if(keyword is "Create or Move"){
+                                CurrentContent.type = keyword;
+                                continue;
                             }
                             else if (keyword is "Write")
                             {
@@ -1082,6 +1085,16 @@ namespace Automa.Source.Core
                             continue;
                         }
 
+                        if((isAssign || inParen) && (CurrentContent.type is "Create" or "Delete" || CurrentInstruction is "Create" or "Delete")){
+                            if(CurrentType is not LexerType.TokenString){
+                                throw new Exception($"Current Arg is not a string, {Current.Line}");
+                            }
+
+                            Source = Current.GetContent();
+                            PrevTok=CurrentType;
+                            continue;
+                        }
+
                         if (CurrentType is LexerType.TokenInt) // int 
                         {
                             CurrentContent = (Current.GetContent(), "int");
@@ -1181,6 +1194,22 @@ namespace Automa.Source.Core
                             Destination = "";
                             isAssign = false;
                             continue;
+                        }else if(CurrentInstruction is "Create"){
+                            Bob.AddNode(new AssignInstruction(new Create(Source)));
+
+                            CurrentInstruction = "";
+                            Source = "";
+                            isAssign = false;
+                            continue;
+                        }
+                        else if (CurrentInstruction is "Delete")
+                        {
+                            Bob.AddNode(new AssignInstruction(new Delete(Source)));
+
+                            CurrentInstruction = "";
+                            Source = "";
+                            isAssign = false;
+                            continue;
                         }
                         else
                         {
@@ -1227,6 +1256,24 @@ namespace Automa.Source.Core
                                 Source = "";
                                 Destination = "";
                                 CurrentInstruction = "";
+                                isAssign = false;
+                                continue;
+                            }
+                            else if (CurrentInstruction is "Create")
+                            {
+                                Bob.AddNode(new AssignInstruction(new Create(Source,CurrentInstruction)));
+
+                                CurrentInstruction = "";
+                                Source = "";
+                                isAssign = false;
+                                continue;
+                            }
+                            else if (CurrentInstruction is "Delete")
+                            {
+                                Bob.AddNode(new AssignInstruction(new Delete(Source, CurrentInstruction)));
+
+                                CurrentInstruction = "";
+                                Source = "";
                                 isAssign = false;
                                 continue;
                             }
@@ -1435,18 +1482,18 @@ namespace Automa.Source.Core
                     isAssign = false;
                 }
 
-                for (int i = 0; i < _Tokens.Length;i++)
+                for (int i = 0; i < _Tokens.Length; i++)
                 {
                     LexerToken Current = _Tokens[i];
                     LexerType CT = Current.TokenType;
                     int peekIndex = i + 1;
 
-                    if ( peekIndex < _Tokens.Length)
+                    if (peekIndex < _Tokens.Length)
                     {
                         Peek = _Tokens[i + 1];
 
                         // Arithmetic toggler
-                        if((Peek.Value.TokenType is LexerType.Token_Add or LexerType.Token_Minus or LexerType.Token_Multiply or LexerType.Token_Divide && CT is LexerType.TokenInt or LexerType.Token_Identifier && isAssign && !isArith) || (Peek.Value.TokenType is LexerType.TokenInt or LexerType.Token_Identifier && CT is LexerType.Token_LParen && isAssign && !isArith && FN is "")) // 2 + or -, might change the Fn is "" toggle
+                        if ((Peek.Value.TokenType is LexerType.Token_Add or LexerType.Token_Minus or LexerType.Token_Multiply or LexerType.Token_Divide && CT is LexerType.TokenInt or LexerType.Token_Identifier && isAssign && !isArith) || (Peek.Value.TokenType is LexerType.TokenInt or LexerType.Token_Identifier && CT is LexerType.Token_LParen && isAssign && !isArith && FN is "")) // 2 + or -, might change the Fn is "" toggle
                         {
                             isArith = true;
                         }
@@ -1454,17 +1501,17 @@ namespace Automa.Source.Core
 
                     if (isdebug)
                     {
-                        Console.WriteLine("[Debug] Current Token: {0}",CT.ToString());
+                        Console.WriteLine("[Debug] Current Token: {0}", CT.ToString());
                     }
 
                     // argument parse
-                    if(parseArgs && CT is not LexerType.Token_RParen)
+                    if (parseArgs && CT is not LexerType.Token_RParen)
                     {
                         string val = Current.GetContent();
 
                         if (CT is LexerType.Token_Identifier)
                         {
-                            args.Add(new(new AutomaString(val),VariableType.Identifier));
+                            args.Add(new(new AutomaString(val), VariableType.Identifier));
                         } else if (CT is LexerType.TokenInt or LexerType.TokenString) {
                             args.Add(new(new AutomaString(val), (CT is LexerType.TokenInt) ? VariableType.Int : VariableType.String));
                         } else if (CT is LexerType.Token_Comma)
@@ -1527,7 +1574,7 @@ namespace Automa.Source.Core
                     {
                         if (isAssign)
                         {
-                            if(CT is LexerType.TokenInt or LexerType.Token_Add or LexerType.Token_LParen or LexerType.Token_RParen or LexerType.Token_Minus or LexerType.Token_Multiply or LexerType.Token_Divide or LexerType.Token_Identifier)
+                            if (CT is LexerType.TokenInt or LexerType.Token_Add or LexerType.Token_LParen or LexerType.Token_RParen or LexerType.Token_Minus or LexerType.Token_Multiply or LexerType.Token_Divide or LexerType.Token_Identifier)
                             {
                                 ArithmeticTokens.Add(Current);
                                 continue;
@@ -1536,19 +1583,19 @@ namespace Automa.Source.Core
                     }
 
                     // Expression Parsing toggler
-                    if((inBlock && prevTok is LexerType.Token_KeyWord) && CT is LexerType.Token_LParen && !parseExpression && depth is 0) 
+                    if ((inBlock && prevTok is LexerType.Token_KeyWord) && CT is LexerType.Token_LParen && !parseExpression && depth is 0)
                     {
                         parseExpression = true;
                         continue;
                     }
 
-                    if(FN != string.Empty && CB is "Function")
+                    if (FN != string.Empty && CB is "Function")
                     {
-                        if(CT == LexerType.Token_LParen)
+                        if (CT == LexerType.Token_LParen)
                         {
                             parseArgs = true;
                             continue;
-                        }else if(CT is LexerType.Token_RParen)
+                        } else if (CT is LexerType.Token_RParen)
                         {
                             parseArgs = false;
 
@@ -1559,7 +1606,7 @@ namespace Automa.Source.Core
                     // Check Tokens
 
                     // Handle keywords: if,elif,else and etc...
-                    if(CT is LexerType.Token_KeyWord) 
+                    if (CT is LexerType.Token_KeyWord)
                     {
                         string keyword = Current.Content.ToString();
                         prevTok = CT;
@@ -1630,7 +1677,7 @@ namespace Automa.Source.Core
                         {
                             if (inBlock && depth is 1)
                             {
-                                NodeBuilder.AddNode(ParseStatement<WhileBlock>(Current, out int tokenConsumed),true);
+                                NodeBuilder.AddNode(ParseStatement<WhileBlock>(Current, out int tokenConsumed), true);
 
                                 if (isdebug)
                                 {
@@ -1639,21 +1686,21 @@ namespace Automa.Source.Core
 
                                 if (tokenConsumed > 0) i += (tokenConsumed - 1); // Jump to the end of the block
                             }
-                            else if(!inBlock && depth is 0)
+                            else if (!inBlock && depth is 0)
                             {
                                 CB = keyword;
                                 inBlock = true;
                             }
 
                             continue;
-                        }else if(keyword is "Function")
+                        } else if (keyword is "Function")
                         {
                             if (!inBlock)
                             {
                                 inBlock = true;
                                 inFunc = true;
                                 CB = keyword;
-                            }else if (inBlock)
+                            } else if (inBlock)
                             {
                                 // inblock function-call implementation, will do later =P
                             }
@@ -1669,16 +1716,19 @@ namespace Automa.Source.Core
                                 {
                                     CC.type = keyword;
                                     continue;
-                                }else if(keyword is "Write" or "While")
+                                } else if (keyword is "Write" or "While")
                                 {
                                     throw new Exception($"Cannot assign instruction 'WRITE' or 'WHILE' at {Current.Line}");
-                                }else if(keyword is "Move" or "Copy"){
-                                    CC.type= keyword;
+                                } else if (keyword is "Move" or "Copy") {
+                                    CC.type = keyword;
+                                    continue;
+                                } else if (keyword is "Create" or "Delete") {
+                                    CC.type = keyword;
                                     continue;
                                 }
 
 
-                            } 
+                            }
                             else if (!isAssign)
                             {
                                 CI = keyword;
@@ -1703,13 +1753,13 @@ namespace Automa.Source.Core
 
                         string ident = Current.GetContent();
 
-                        if(Peek.Value.TokenType is LexerType.Token_LParen)
+                        if (Peek.Value.TokenType is LexerType.Token_LParen)
                         {
                             CB = "Function";
-                           
+
                         }
 
-                        if(CB is "Function" && FN is "")  // if its a function call
+                        if (CB is "Function" && FN is "")  // if its a function call
                         {
                             FN = new(ident);
 
@@ -1787,21 +1837,21 @@ namespace Automa.Source.Core
                             throw new Exception($"Missing Closing Parenthesis on {Current.Line}");
                         }
 
-                        if(CB == "Function")
+                        if (CB == "Function")
                         {
 
                             if (isdebug)
                             {
-                                Console.WriteLine("[DEBUG] Registering function call with name: {0} with target: {1}", FN,CI);
+                                Console.WriteLine("[DEBUG] Registering function call with name: {0} with target: {1}", FN, CI);
                             }
 
                             if (CI is "")
                             {
-                                NodeBuilder.AddNode(new AssignInstruction(new FunctionCall(FN, null, AddParams())),inBlock);
+                                NodeBuilder.AddNode(new AssignInstruction(new FunctionCall(FN, null, AddParams())), inBlock);
                             }
                             else
                             {
-                                NodeBuilder.AddNode(new AssignInstruction(new FunctionCall(FN,CI,AddParams())),inBlock);
+                                NodeBuilder.AddNode(new AssignInstruction(new FunctionCall(FN, CI, AddParams())), inBlock);
                             }
 
 
@@ -1908,7 +1958,7 @@ namespace Automa.Source.Core
                         {
                             if (inBlock && depth is 1)
                             {
-                                NodeBuilder.AddNode(new AssignInstruction((new RunAssignment(("null", CC.content),stdout))), inBlock);
+                                NodeBuilder.AddNode(new AssignInstruction((new RunAssignment(("null", CC.content), stdout))), inBlock);
 
                                 //reset all before proceeding to the next
 
@@ -1922,7 +1972,7 @@ namespace Automa.Source.Core
 
                             if (!inBlock && depth is 0)
                             {
-                                NodeBuilder.AddNode(new AssignInstruction((new RunAssignment(("null", CC.content),stdout))));
+                                NodeBuilder.AddNode(new AssignInstruction((new RunAssignment(("null", CC.content), stdout))));
 
                                 //reset all before proceeding to the next
                                 stdout = false;
@@ -1954,27 +2004,54 @@ namespace Automa.Source.Core
 
                             // reset
                             args.Clear();
-                            
+
                             CI = string.Empty;
                             CC = ("", "");
                             validParen = false;
                             continue;
-                        }else if(CI is "Copy"){
-                            if(isAssign){
-                                throw new Exception("Cannot Assign to Copy Instruction");
-                            }
+                        } else if (CI is "Copy") {
 
 
-                            if(!inBlock && depth is 0){
+
+                            if (!inBlock && depth is 0) {
                                 NodeBuilder.AddNode(new AssignInstruction(new CopyInstruction(SRC, DEST)));
-                            }else if(inBlock && depth is 1){
-                                NodeBuilder.AddNode(new AssignInstruction(new CopyInstruction(SRC, DEST)),inBlock);
+                            } else if (inBlock && depth is 1) {
+                                NodeBuilder.AddNode(new AssignInstruction(new CopyInstruction(SRC, DEST)), inBlock);
                             }
-                            
-                            
+
+
                             CI = "";
                             SRC = "";
                             DEST = "";
+                            isAssign = false;
+                            validParen = false;
+                            continue;
+                        }else if(CI is "Create"){
+                            if(!inBlock && depth is 0) {
+                                NodeBuilder.AddNode(new AssignInstruction(new Create(SRC)));
+                            }else if(inBlock && depth is 1){
+                                NodeBuilder.AddNode(new AssignInstruction(new Create(SRC)), inBlock);
+                            }
+
+                            SRC = "";
+                            CI = "";
+                            CC = ("", "");
+                            isAssign = false;
+                            validParen = false;
+                            continue;
+                        }else if(CI is "Delete"){
+                            if (!inBlock && depth is 0)
+                            {
+                                NodeBuilder.AddNode(new AssignInstruction(new Delete(SRC)));
+                            }
+                            else if (inBlock && depth is 1)
+                            {
+                                NodeBuilder.AddNode(new AssignInstruction(new Delete(SRC)), inBlock);
+                            }
+
+                            SRC = "";
+                            CI = "";
+                            CC = ("", "");
                             isAssign = false;
                             validParen = false;
                             continue;
@@ -1996,7 +2073,7 @@ namespace Automa.Source.Core
                             {
                                 _type = VariableType.Identifier;
                             }
-                            else if( CC.type is "bool")
+                            else if (CC.type is "bool")
                             {
                                 _type = VariableType.Boolean;
                                 value = new AutomaBoolean(bool.Parse(CC.content));
@@ -2006,7 +2083,7 @@ namespace Automa.Source.Core
 
                             if (isdebug)
                             {
-                                Console.WriteLine("[DEBUG] Current detected var type: {0} , w/ name: {1}, with CCType: {2}",_type,varname,CC.type);
+                                Console.WriteLine("[DEBUG] Current detected var type: {0} , w/ name: {1}, with CCType: {2}", _type, varname, CC.type);
                             }
 
 
@@ -2041,7 +2118,7 @@ namespace Automa.Source.Core
                             {
                                 if (inBlock && depth is 1)
                                 {
-                                    NodeBuilder.AddNode(new AssignInstruction(new RunAssignment((varname, CC.content),stdout)), inBlock);
+                                    NodeBuilder.AddNode(new AssignInstruction(new RunAssignment((varname, CC.content), stdout)), inBlock);
                                     //reset all before proceeding to the next
 
                                     CI = string.Empty; // erase CI for the next...
@@ -2054,7 +2131,7 @@ namespace Automa.Source.Core
 
                                 if (!inBlock && depth is 0)
                                 {
-                                    NodeBuilder.AddNode(new AssignInstruction(new RunAssignment((varname, CC.content),stdout)), inBlock);
+                                    NodeBuilder.AddNode(new AssignInstruction(new RunAssignment((varname, CC.content), stdout)), inBlock);
                                     //reset all before proceeding to the next
 
                                     CI = string.Empty; // erase CI for the next...
@@ -2064,21 +2141,9 @@ namespace Automa.Source.Core
                                     isAssign = false;
                                     continue;
                                 }
-                            }else if(CC.type is "Copy"){
-                                if(!inBlock && depth is 0){
+                            } else if (CC.type is "Copy") {
+                                if (!inBlock && depth is 0) {
                                     NodeBuilder.AddNode(new AssignInstruction(new CopyInstruction(SRC, DEST, CI)));
-
-                                    CI = "";
-                                    CC = ("", "");
-                                    SRC = "";
-                                    DEST = "";
-                                    isAssign =false;
-                                    validParen = false;
-                                    continue;
-                                }
-                                else if (inBlock && depth is 1)
-                                {
-                                    NodeBuilder.AddNode(new AssignInstruction(new CopyInstruction(SRC, DEST, CI)),inBlock);
 
                                     CI = "";
                                     CC = ("", "");
@@ -2088,7 +2153,19 @@ namespace Automa.Source.Core
                                     validParen = false;
                                     continue;
                                 }
-                            }else if(CC.type is "Move"){
+                                else if (inBlock && depth is 1)
+                                {
+                                    NodeBuilder.AddNode(new AssignInstruction(new CopyInstruction(SRC, DEST, CI)), inBlock);
+
+                                    CI = "";
+                                    CC = ("", "");
+                                    SRC = "";
+                                    DEST = "";
+                                    isAssign = false;
+                                    validParen = false;
+                                    continue;
+                                }
+                            } else if (CC.type is "Move") {
                                 if (!inBlock && depth is 0)
                                 {
                                     NodeBuilder.AddNode(new AssignInstruction(new MoveInstruction(SRC, DEST, CI)));
@@ -2113,21 +2190,55 @@ namespace Automa.Source.Core
                                     validParen = false;
                                     continue;
                                 }
+                            } else if(CC.type is "Create"){
+                                if (!inBlock && depth is 0)
+                                {
+                                    NodeBuilder.AddNode(new AssignInstruction(new Create(SRC,CI)));
+                                }
+                                else if (inBlock && depth is 1)
+                                {
+                                    NodeBuilder.AddNode(new AssignInstruction(new Create(SRC,CI)), inBlock);
+                                }
+
+                                SRC = "";
+                                CI = "";
+                                CC = ("", "");
+                                isAssign = false;
+                                validParen = false;
+                                continue;
+                            }
+                            else if (CC.type is "Delete")
+                            {
+                                if (!inBlock && depth is 0)
+                                {
+                                    NodeBuilder.AddNode(new AssignInstruction(new Delete(SRC, CI)));
+                                }
+                                else if (inBlock && depth is 1)
+                                {
+                                    NodeBuilder.AddNode(new AssignInstruction(new Delete(SRC, CI)), inBlock);
+                                }
+
+                                SRC = "";
+                                CI = "";
+                                CC = ("", "");
+                                isAssign = false;
+                                validParen = false;
+                                continue;
                             }
 
                             if (isArith && !inBlock)
                             {
-                                Arithmetic arith = new(ArithmeticTokens,isdebug);
+                                Arithmetic arith = new(ArithmeticTokens, isdebug);
 
-                                NodeBuilder.AddNode(new AssignInstruction(new ArithmeticAssign(arith.ParseArithmetic(out int _),varname)));
+                                NodeBuilder.AddNode(new AssignInstruction(new ArithmeticAssign(arith.ParseArithmetic(out int _), varname)));
 
                                 ArithReset();
                                 continue;
                             }
 
-                            if(isArith && inBlock)
+                            if (isArith && inBlock)
                             {
-                                Arithmetic arith = new(ArithmeticTokens,isdebug);
+                                Arithmetic arith = new(ArithmeticTokens, isdebug);
 
                                 NodeBuilder.AddNode(new AssignInstruction(new ArithmeticAssign(arith.ParseArithmetic(out int _), varname)), true);
 
@@ -2188,22 +2299,22 @@ namespace Automa.Source.Core
 
                             prevTok = CT;
                             continue;
-                        } else if(CI is "Copy" or "Move"){ // stand-alone
+                        } else if (CI is "Copy" or "Move") { // stand-alone
 
-                            if(CT is not LexerType.TokenString){
+                            if (CT is not LexerType.TokenString) {
                                 throw new Exception($"Can only assign string args to File System instructions. {Current.Line}");
                             }
-                
-                            if(prevTok is LexerType.Token_Comma){ // Dest, 2nd Arg
+
+                            if (prevTok is LexerType.Token_Comma) { // Dest, 2nd Arg
                                 DEST = Current.GetContent();
-                            }else if(Peek!.Value.TokenType is LexerType.Token_Comma){ // Src, 1st arg
+                            } else if (Peek!.Value.TokenType is LexerType.Token_Comma) { // Src, 1st arg
                                 SRC = Current.GetContent();
                             }
-                            
+
 
                             prevTok = CT;
                             continue;
-                        }else if(CC.type is "Copy" or "Move"){ // with assignment
+                        } else if (CC.type is "Copy" or "Move") { // with assignment
                             if (CT is not LexerType.TokenString)
                             {
                                 throw new Exception($"Can only assign string args to File System instructions. {Current.Line}");
@@ -2218,6 +2329,17 @@ namespace Automa.Source.Core
                                 SRC = Current.GetContent();
                             }
 
+
+                            prevTok = CT;
+                            continue;
+                        } else if ((isAssign || inParen) && (CC.type is "Create" or "Delete" || CI is "Create" or "Delete")){
+
+                            if (CT is not LexerType.TokenString)
+                            {
+                                throw new Exception($"Can only assign string args to File System instructions. {Current.Line}");
+                            }
+
+                            SRC = Current.GetContent();
 
                             prevTok = CT;
                             continue;

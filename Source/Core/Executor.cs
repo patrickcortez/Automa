@@ -331,6 +331,50 @@ namespace Automa.Source.Core
                                 FindVar = new(move.target, new AutomaInteger(move.Start()), VariableType.Int);
                                 Variables.Add(FindVar);
                                 break;
+                            }else if(assignment.type is Create create){
+                                
+                                if(create.target is null){
+                                    create.Start();
+                                    break;
+                                }
+
+                                Variable? target = Variables.Find(ex => ex.name == create.target);
+
+                                if(target is not null){
+                                    int index = Variables.IndexOf(target);
+
+                                    target = target with{ value=new AutomaInteger(create.Start()) };
+                                    Variables[index] = target;
+                                    break;
+                                }
+
+                                target = new(create.target, new AutomaInteger(create.Start()));
+                                Variables.Add(target);
+                                break;
+                            }
+                            else if (assignment.type is Delete delete)
+                            {
+
+                                if (delete.target is null)
+                                {
+                                    delete.Start();
+                                    break;
+                                }
+
+                                Variable? target = Variables.Find(ex => ex.name == delete.target);
+
+                                if (target is not null)
+                                {
+                                    int index = Variables.IndexOf(target);
+
+                                    target = target with { value = new AutomaInteger(delete.Start()) };
+                                    Variables[index] = target;
+                                    break;
+                                }
+
+                                target = new(delete.target, new AutomaInteger(delete.Start()));
+                                Variables.Add(target);
+                                break;
                             }
 
                             break;

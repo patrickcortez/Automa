@@ -46,8 +46,8 @@ namespace Automa.Source.Definitions
         TokenArith, // 2 + 2 - 2
         Token_Identifier, // Write,Read etc...
         Token_Multiply, // *
-        Token_Divide, // \
-        Token_KeyWord,
+        Token_Divide, // /
+        Token_KeyWord, // Write, Read, Run, If, Elif, Else, While, Function
         Token_GreaterThan, // >
         Token_LessThan, // <
         Token_Or, // ||

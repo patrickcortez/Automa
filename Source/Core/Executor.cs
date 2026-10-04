@@ -1,4 +1,5 @@
-﻿using Automa.Source.Core.IO;
+﻿using Automa.Source.Core.FileSystem;
+using Automa.Source.Core.IO;
 using Automa.Source.Definitions;
 using static Automa.Source.Utility.Utils;
 
@@ -279,6 +280,57 @@ namespace Automa.Source.Core
                                 }
 
                                 FA.Invoke(Variables,isdebug);
+                            }else if(assignment.type is CopyInstruction copy){
+
+                                if(copy.target is null){
+                                    int exitc = copy.Start();
+                                    
+                                    if(isdebug){
+                                        Console.WriteLine($"[DEBUG] Copy exited with {exitc}");
+                                    }
+    
+                                    break;
+                                }    
+        
+                                Variable? FindVar = Variables.Find(ex => ex.name == copy.target);
+
+
+                                if(FindVar is not null){
+                                    int index = Variables.IndexOf(FindVar);
+                                    FindVar = FindVar with { value = new AutomaInteger(copy.Start()) };
+                                    Variables[index] = FindVar;
+                                    break;
+                                }
+
+                                FindVar = new(copy.target,new AutomaInteger(copy.Start()),VariableType.Int);
+                                Variables.Add(FindVar);
+                                break;
+                            }else if(assignment.type is MoveInstruction move){
+                                if (move.target is null)
+                                {
+                                    int exitc = move.Start();
+
+                                    if (isdebug)
+                                    {
+                                        Console.WriteLine($"[DEBUG] Copy exited with {exitc}");
+                                    }
+
+                                    break;
+                                }
+
+                                Variable? FindVar = Variables.Find(ex => ex.name == move.target);
+
+                                if (FindVar is not null)
+                                {
+                                    int index = Variables.IndexOf(FindVar);
+                                    FindVar = FindVar with { value = new AutomaInteger(move.Start()) };
+                                    Variables[index] = FindVar;
+                                    break;
+                                }
+
+                                FindVar = new(move.target, new AutomaInteger(move.Start()), VariableType.Int);
+                                Variables.Add(FindVar);
+                                break;
                             }
 
                             break;

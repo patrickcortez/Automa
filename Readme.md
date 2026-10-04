@@ -38,6 +38,10 @@ The Following instructions of **Automa**:
 - **Run** : Run a external command/application. (Has a boolean argument: true - returns stdout/err, false(default) - returns exit code)
 - **While** : for looping purposes
 - **Functions** : for making reusable blocks of code
+- **File System instructions** : instructions that are performed on the operating system with no external command call and is an assignment type. It returns an integer which is its exit code:
+
+	- *Copy* : Copy a Directory or file to a another directory: `var=Copy("Source","Destination");`
+	- *Move* : Moves a File or directort to another directory: `var=Move("Source","Destination");`
 
 ## Assignment Types
 
@@ -53,6 +57,9 @@ The Following are the assignment types:
 	- Division
 	- Parenthesis
 - **Function Call** : Returns the value of function based on what the function returns
+- **File system operations** : Retuns exit-code of the operation.
+	- *Copy*
+	- *Move*
 
 ## Logical Operators:
 

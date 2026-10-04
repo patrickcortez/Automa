@@ -29,7 +29,7 @@ namespace Automa.Source.Core
          // - Rewrite NodeBuilder class as a instance based class instead of a static class.
          // - Implement: Copy, Create, Delete and Move.
 
-        private string[] keyWords = ["If", "Elif","Else","Write","Run","Read","While","Function","Return"];
+        private string[] keyWords = ["If", "Elif","Else","Write","Run","Read","While","Function","Return","Move","Copy"];
         private string lastIdent = "";
 
         private LexerToken[]? Tokenize() // Lexer & Tokenizer

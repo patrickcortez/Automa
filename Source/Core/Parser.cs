@@ -1,3 +1,4 @@
+using Automa.Source.Core.FileSystem;
 using Automa.Source.Definitions;
 using static Automa.Source.Utility.Utils;
 using ExpOperand = (string Content, string Type);
@@ -609,7 +610,7 @@ namespace Automa.Source.Core
 
                 bool isArith = false;
 
-                string CurrentInstruction = "", Function_Name="";
+                string CurrentInstruction = "", Function_Name="",Source="",Destination="";
                 (string value, string type) CurrentContent = ("", "");
 
                 List<LexerToken> Toks = LexTok.Skip(StartingIndex).ToList();
@@ -889,6 +890,9 @@ namespace Automa.Source.Core
                             {
                                 CurrentContent.type = keyword;
                                 continue;
+                            }else if(keyword is "Copy" or "Move"){
+                                CurrentContent.type = keyword;
+                                continue;
                             }
                             else if (keyword is "Write")
                             {
@@ -1032,9 +1036,9 @@ namespace Automa.Source.Core
 
                         if ((isAssign || inParen) && (CurrentContent.type is "Read" or "Run" || CurrentInstruction is "Read" or "Run"))
                         {
-                            if(PrevTok is LexerType.TokenBool)
+                            if(CurrentType is LexerType.TokenBool)
                             {
-                                if (CurrentType is LexerType.Token_Comma)
+                                if (PrevTok is LexerType.Token_Comma)
                                 {
                                     stdout = Current.GetContent().Equals("true", StringComparison.OrdinalIgnoreCase);
                                 }
@@ -1056,6 +1060,27 @@ namespace Automa.Source.Core
                             continue;
                         }
 
+
+                        if((isAssign || inParen) && (CurrentContent.type is "Copy" or "Move" || CurrentInstruction is "Copy" or "Move")){
+
+                            if (CurrentType is not LexerType.TokenString)
+                            {
+                                throw new Exception($"Current Arg is not a string, {Current.Line}");
+                            }
+
+                            if (PrevTok is LexerType.Token_Comma){
+                                
+                                Destination = Current.GetContent();
+                            
+                            }else if(Peek!.Value.TokenType is LexerType.Token_Comma){
+
+                                Source= Current.GetContent();
+
+                            }
+                            
+                            PrevTok= CurrentType;
+                            continue;
+                        }
 
                         if (CurrentType is LexerType.TokenInt) // int 
                         {
@@ -1110,7 +1135,7 @@ namespace Automa.Source.Core
                         }
                         else if (CurrentInstruction is "Run")
                         {
-                            Bob.AddNode(new AssignInstruction(new RunAssignment(("null", CurrentContent.value),stdout)));
+                            Bob.AddNode(new AssignInstruction(new RunAssignment(("null", CurrentContent.value), stdout)));
 
                             // reset
                             CurrentContent = ("", "");
@@ -1119,26 +1144,42 @@ namespace Automa.Source.Core
                             isAssign = false;
 
                             continue;
-                        }else if(CurrentInstruction is "Return")
+                        } else if (CurrentInstruction is "Return")
                         {
                             string Rtype = CurrentContent.type;
 
-                            if(Rtype is "int")
+                            if (Rtype is "int")
                             {
                                 CR = new(new AutomaInteger(int.Parse(CurrentContent.value)), VariableType.Int);
-                            } else if(Rtype is "string")
+                            } else if (Rtype is "string")
                             {
                                 CR = new(new AutomaString(CurrentContent.value), VariableType.String);
-                            }else if(Rtype is "bool")
+                            } else if (Rtype is "bool")
                             {
                                 CR = new(new AutomaBoolean(bool.Parse(CurrentContent.value)), VariableType.Boolean);
-                            }else if(Rtype is "identifier")
+                            } else if (Rtype is "identifier")
                             {
                                 CR = new(new AutomaString(CurrentContent.value), VariableType.Identifier);
                             }
 
                             Bob.AddNode(new ReturnInstruction(CR));
 
+                            continue;
+                        } else if(CurrentInstruction is "Copy"){
+                            Bob.AddNode(new AssignInstruction(new CopyInstruction(Source, Destination)));
+
+                            CurrentInstruction = "";
+                            Source = "";
+                            Destination = "";
+                            isAssign = false;
+                            continue;
+                        }else if(CurrentInstruction is "Move"){
+                            Bob.AddNode(new AssignInstruction(new MoveInstruction(Source, Destination)));
+
+                            CurrentInstruction = "";
+                            Source = "";
+                            Destination = "";
+                            isAssign = false;
                             continue;
                         }
                         else
@@ -1168,6 +1209,25 @@ namespace Automa.Source.Core
                                 CurrentInstruction = "";
                                 isAssign = false;
 
+                                continue;
+                            }else if(CurrentContent.type is "Copy"){
+                                Bob.AddNode(new AssignInstruction(new CopyInstruction(Source, Destination, CurrentInstruction)));
+
+                                Source = "";
+                                Destination = "";
+                                CurrentInstruction = "";
+                                isAssign = false;
+                                continue;
+                                
+                            }
+                            else if (CurrentContent.type is "Move")
+                            {
+                                Bob.AddNode(new AssignInstruction(new MoveInstruction(Source, Destination, CurrentInstruction)));
+
+                                Source = "";
+                                Destination = "";
+                                CurrentInstruction = "";
+                                isAssign = false;
                                 continue;
                             }
 
@@ -1313,6 +1373,7 @@ namespace Automa.Source.Core
                 string CI = "None"; // Current Instruction,
                 LexerType prevTok = LexerType.Token_None;
                 string  CB = "",FN=""; // Logical operator and Current Block
+                string DEST = "", SRC = "";
 
                 // Arithmetic tokens for Arithmetic parser;
                 List<LexerToken> ArithmeticTokens = new();
@@ -1611,6 +1672,9 @@ namespace Automa.Source.Core
                                 }else if(keyword is "Write" or "While")
                                 {
                                     throw new Exception($"Cannot assign instruction 'WRITE' or 'WHILE' at {Current.Line}");
+                                }else if(keyword is "Move" or "Copy"){
+                                    CC.type= keyword;
+                                    continue;
                                 }
 
 
@@ -1895,6 +1959,25 @@ namespace Automa.Source.Core
                             CC = ("", "");
                             validParen = false;
                             continue;
+                        }else if(CI is "Copy"){
+                            if(isAssign){
+                                throw new Exception("Cannot Assign to Copy Instruction");
+                            }
+
+
+                            if(!inBlock && depth is 0){
+                                NodeBuilder.AddNode(new AssignInstruction(new CopyInstruction(SRC, DEST)));
+                            }else if(inBlock && depth is 1){
+                                NodeBuilder.AddNode(new AssignInstruction(new CopyInstruction(SRC, DEST)),inBlock);
+                            }
+                            
+                            
+                            CI = "";
+                            SRC = "";
+                            DEST = "";
+                            isAssign = false;
+                            validParen = false;
+                            continue;
                         }
                         else
                         {
@@ -1981,6 +2064,55 @@ namespace Automa.Source.Core
                                     isAssign = false;
                                     continue;
                                 }
+                            }else if(CC.type is "Copy"){
+                                if(!inBlock && depth is 0){
+                                    NodeBuilder.AddNode(new AssignInstruction(new CopyInstruction(SRC, DEST, CI)));
+
+                                    CI = "";
+                                    CC = ("", "");
+                                    SRC = "";
+                                    DEST = "";
+                                    isAssign =false;
+                                    validParen = false;
+                                    continue;
+                                }
+                                else if (inBlock && depth is 1)
+                                {
+                                    NodeBuilder.AddNode(new AssignInstruction(new CopyInstruction(SRC, DEST, CI)),inBlock);
+
+                                    CI = "";
+                                    CC = ("", "");
+                                    SRC = "";
+                                    DEST = "";
+                                    isAssign = false;
+                                    validParen = false;
+                                    continue;
+                                }
+                            }else if(CC.type is "Move"){
+                                if (!inBlock && depth is 0)
+                                {
+                                    NodeBuilder.AddNode(new AssignInstruction(new MoveInstruction(SRC, DEST, CI)));
+
+                                    CI = "";
+                                    CC = ("", "");
+                                    SRC = "";
+                                    DEST = "";
+                                    isAssign = false;
+                                    validParen = false;
+                                    continue;
+                                }
+                                else if (inBlock && depth is 1)
+                                {
+                                    NodeBuilder.AddNode(new AssignInstruction(new MoveInstruction(SRC, DEST, CI)), true);
+
+                                    CI = "";
+                                    CC = ("", "");
+                                    SRC = "";
+                                    DEST = "";
+                                    isAssign = false;
+                                    validParen = false;
+                                    continue;
+                                }
                             }
 
                             if (isArith && !inBlock)
@@ -2053,6 +2185,39 @@ namespace Automa.Source.Core
                             {
                                 CC.content = Current.GetContent();
                             }
+
+                            prevTok = CT;
+                            continue;
+                        } else if(CI is "Copy" or "Move"){ // stand-alone
+
+                            if(CT is not LexerType.TokenString){
+                                throw new Exception($"Can only assign string args to File System instructions. {Current.Line}");
+                            }
+                
+                            if(prevTok is LexerType.Token_Comma){ // Dest, 2nd Arg
+                                DEST = Current.GetContent();
+                            }else if(Peek!.Value.TokenType is LexerType.Token_Comma){ // Src, 1st arg
+                                SRC = Current.GetContent();
+                            }
+                            
+
+                            prevTok = CT;
+                            continue;
+                        }else if(CC.type is "Copy" or "Move"){ // with assignment
+                            if (CT is not LexerType.TokenString)
+                            {
+                                throw new Exception($"Can only assign string args to File System instructions. {Current.Line}");
+                            }
+
+                            if (prevTok is LexerType.Token_Comma)
+                            { // Dest, 2nd Arg
+                                DEST = Current.GetContent();
+                            }
+                            else if (Peek!.Value.TokenType is LexerType.Token_Comma)
+                            { // Src, 1st arg
+                                SRC = Current.GetContent();
+                            }
+
 
                             prevTok = CT;
                             continue;

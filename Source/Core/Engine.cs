@@ -1,6 +1,7 @@
 ﻿using Automa.Source.Definitions;
 using System.Collections;
 using System.Text;
+using Automa.Source.Exceptions;
 using System.Transactions;
 using static Automa.Source.Utility.Utils;
 
@@ -55,22 +56,23 @@ namespace Automa.Source.Core
                         continue;
                     }
 
-                    StringBuilder Value = new(),identifier = new();
+                    StringBuilder Value = new(), identifier = new();
 
                     void Flush()
                     {
-                        if(Value.Length > 0)
+                        if (Value.Length > 0)
                         {
                             string value = Value.ToString();
 
-                            if (value.Equals("True", StringComparison.OrdinalIgnoreCase) || value.Equals("False", StringComparison.OrdinalIgnoreCase)){
-                            
-                                Tokens.Add(new(LexerType.TokenBool,LineNo,value.ToLower()));
+                            if (value.Equals("True", StringComparison.OrdinalIgnoreCase) || value.Equals("False", StringComparison.OrdinalIgnoreCase))
+                            {
+
+                                Tokens.Add(new(LexerType.TokenBool, LineNo, value.ToLower()));
                                 Value.Clear();
                                 return;
                             }
 
-                            Tokens.Add(new((int.TryParse(value, out _) ? LexerType.TokenInt : LexerType.TokenString ),LineNo,value));
+                            Tokens.Add(new((int.TryParse(value, out _) ? LexerType.TokenInt : LexerType.TokenString), LineNo, value));
                             Value.Clear();
 
                         }
@@ -83,22 +85,22 @@ namespace Automa.Source.Core
                         Console.WriteLine($"[DEBUG] Current Line:");
                     }
 
-                    for(int i = 0; i < line.Length;i++)
+                    for (int i = 0; i < line.Length; i++)
                     {
                         // Qoute Checking
 
                         char c = line[i];
 
-                        char Peek = ' ',Back = ' ';
+                        char Peek = ' ', Back = ' ';
                         int next = i + 1;
                         int prev = i - 1;
 
-                        if(next < line.Length)
+                        if (next < line.Length)
                         {
                             Peek = line[next];
                         }
 
-                        if(prev >= 0)
+                        if (prev >= 0)
                         {
                             Back = line[prev];
                         }
@@ -122,7 +124,7 @@ namespace Automa.Source.Core
 
                             if (val != string.Empty && !char.IsNumber(val[val.Length - 1]))
                             {
-                                throw new Exception("Invalid assignment: Cannot assignment integer next to a string literal");
+                                throw new LexingException("Invalid assignment: Cannot assignment integer next to a string literal");
                             }
 
                             Value.Append(c);
@@ -132,23 +134,24 @@ namespace Automa.Source.Core
                         // Identifier Handling
                         if ((char.IsLetterOrDigit(c) || c == '_') && !isInQoutes) // store all character literals 
                         {
-                            if(Value.Length > 0) // if the previous letters are integers then just append the previous to current,
+                            if (Value.Length > 0) // if the previous letters are integers then just append the previous to current,
                             {
                                 identifier.Append(Value);
                                 Value.Clear(); // erase previous since its a identifier
                             }
                             identifier.Append(c);
                             continue;
-                        }else if(!(char.IsLetterOrDigit(c) || c == '_') && !isInQoutes) // store at '_', '|' , '&' and etc....
+                        }
+                        else if (!(char.IsLetterOrDigit(c) || c == '_') && !isInQoutes) // store at '_', '|' , '&' and etc....
                         {
-                            if(identifier.Length > 0) // always check if ident is not empty
+                            if (identifier.Length > 0) // always check if ident is not empty
                             {
                                 string ident = identifier.ToString();
 
-                                
+
                                 if (keyWords.Contains(ident))
                                 {
-                                    Tokens.Add(new(LexerType.Token_KeyWord, LineNo,ident));
+                                    Tokens.Add(new(LexerType.Token_KeyWord, LineNo, ident));
                                     lastIdent = ident;
                                     identifier.Clear();
                                 }
@@ -195,7 +198,7 @@ namespace Automa.Source.Core
                                 {
                                     string Val = Value.ToString();
 
-                                    if(Val is "True" or "False")
+                                    if (Val is "True" or "False")
                                     {
                                         Val = Val.ToLower();
                                     }
@@ -205,7 +208,8 @@ namespace Automa.Source.Core
                                         Tokens.Add(new(LexerType.TokenInt, LineNo, Val));
                                         Value.Clear();
                                     }
-                                    else if (bool.TryParse(Val,out _)){ // Boolean: true or false
+                                    else if (bool.TryParse(Val, out _))
+                                    { // Boolean: true or false
                                         Tokens.Add(new(LexerType.TokenBool, LineNo, Val));
                                         Value.Clear();
                                     }
@@ -215,7 +219,7 @@ namespace Automa.Source.Core
                                         Value.Clear();
                                     }
 
-                                    
+
                                 }
 
                                 Tokens.Add(new(LexerType.Token_SemiColon, LineNo));
@@ -232,7 +236,7 @@ namespace Automa.Source.Core
                                 {
                                     string val = Value.ToString();
 
-                                    if(val is  "True" or "False")
+                                    if (val is "True" or "False")
                                     {
                                         val = val.ToLower();
                                     }
@@ -286,10 +290,10 @@ namespace Automa.Source.Core
                                     {
                                         if (int.TryParse(Value.ToString(), out int val)) // make sure the left side is not a string or int literal
                                         {
-                                            throw new Exception("Cannot assign a value to a integer literal");
+                                            throw new LexingException("Cannot assign a value to a integer literal");
                                         }
 
-                                        throw new Exception("Cannot assign a value to a string literal");
+                                        throw new LexingException("Cannot assign a value to a string literal");
                                     }
 
                                     Flush();
@@ -363,7 +367,7 @@ namespace Automa.Source.Core
                                 }
                                 else
                                 {
-                                    throw new Exception($"Missing Token at {LineNo}");
+                                    throw new LexingException($"Missing Token at {LineNo}");
                                 }
 
                                 continue;
@@ -419,7 +423,7 @@ namespace Automa.Source.Core
 
                                 if (Back is '=')
                                 {
-                                    throw new Exception($"Invalid operation at line: {LineNo}");
+                                    throw new LexingException($"Invalid operation at line: {LineNo}");
                                 }
 
                                 bool isLesser = Peek == '=';
@@ -468,9 +472,9 @@ namespace Automa.Source.Core
                                 Tokens.Add(new(isLogicalOp ? LexerType.Token_And : LexerType.Token_Ampersand, LineNo));
                                 continue;
                             }
-                            else if(c is ',')
+                            else if (c is ',')
                             {
-                                if(Value.Length > 0)
+                                if (Value.Length > 0)
                                 {
                                     Flush();
                                 }
@@ -495,7 +499,7 @@ namespace Automa.Source.Core
                         {
                             if (lasttoken.TokenType != LexerType.Token_SemiColon && lasttoken.TokenType != LexerType.Token_LBrace && lasttoken.TokenType != LexerType.Token_RBrace && !keyWords.Contains(lastIdent))
                             {
-                                throw new Exception($"Missing ';' in line: {LineNo}");
+                                throw new LexingException($"Missing ';' in line: {LineNo}");
                             }
                         }
                     }
@@ -504,7 +508,12 @@ namespace Automa.Source.Core
                 }
 
                 return Tokens.ToArray();
-            }catch(Exception ex)
+            }
+            catch (LexingException ex) {
+                Console.WriteLine("Lexer Error: {0}", ex);
+                return null;
+            }
+            catch (Exception ex)
             {
                 Console.WriteLine("Lexer Error: {0}", ex);
                 return null;
@@ -535,10 +544,13 @@ namespace Automa.Source.Core
                     Console.WriteLine("[Debug] Token Count: {0}", toks.Count());
                 }
 
-                Parser parse = new(toks ?? throw new Exception("Lexer Error: Empty Tokens!"),isdebug);
+                Parser parse = new(toks ?? throw new LexingException("Lexer Error: Empty Tokens!"),isdebug);
                
 
                 return  parse.Start();
+            }catch(LexingException ex){
+                Print("Error while Lexing File", ex, new(PrintOptions.Error, true));
+                return 1;
             }
             catch(Exception ex)
             {

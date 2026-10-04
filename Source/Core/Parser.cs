@@ -1030,6 +1030,25 @@ namespace Automa.Source.Core
                             throw new Exception($"Cannot assign value to Literals at line {Current.Line}");
                         }
 
+                        if (CurrentContent.type is "Read" or "Run")
+                        {
+                            if(PrevTok is LexerType.TokenBool)
+                            {
+                                if (CurrentType is LexerType.Token_Comma)
+                                {
+                                    stdout = Current.GetContent().Equals("true", StringComparison.OrdinalIgnoreCase);
+                                }
+                                else
+                                {
+                                    // expand types, for now we continue;
+                                    CurrentContent.value = Current.GetContent();
+                                }
+                                PrevTok = CurrentType;
+                                continue;
+
+                            }
+                        }
+
 
                         if (CurrentType is LexerType.TokenInt) // int 
                         {
@@ -1038,20 +1057,6 @@ namespace Automa.Source.Core
                         }
 
                         if(CurrentType is LexerType.TokenBool){
-
-                            if(PrevTok is LexerType.Token_Comma){
-                                if(CurrentInstruction is "Run"){
-                                      
-                                    if(Current.GetContent().ToLower() is "true"){
-                                        stdout = true;
-                                    }else{
-                                        stdout = false;
-                                    }
-                                    continue;
-                                }
-                            }else{
-                                continue;
-                            }
                             CurrentContent = (Current.GetContent(), "bool");
                             continue;
                         }
@@ -1224,9 +1229,13 @@ namespace Automa.Source.Core
 
                         break; // if depth reaches 1
                     }
-                    else if (CurrentType is LexerType.Token_Not)
+                    else if (CurrentType is LexerType.Token_Not) // !
                     {
                         PrevTok = CurrentType;
+                        continue;
+                    }else if(CurrentType is LexerType.Token_Comma) // ,
+                    {
+                        PrevTok=CurrentType;
                         continue;
                     }
                 }

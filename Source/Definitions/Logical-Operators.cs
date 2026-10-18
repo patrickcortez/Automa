@@ -100,6 +100,24 @@ namespace Automa.Source.Definitions
     }
 
 
+    // For if(var) and if(func())
+    internal record AutomaSingle(Operand Main) : Expression<bool>
+    {
+        public override bool Evaluate(List<Variable> Variables)
+        {
+            IValue? Val = Main switch
+            {   
+                LiteralExpression lexpr => lexpr.value,
+                VariableExpression vexpr => vexpr.Eval(Variables),
+                FunctionExpression fexpr => fexpr.Eval(Variables),
+                _ => new AutomaNull()
+            };
+
+            return Equals(Val?.Eval(Variables),true);
+        }
+    }
+
+
     internal record EqualTo(Operand Left, Operand Right) : Expression<bool>
     {
 

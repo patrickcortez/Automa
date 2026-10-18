@@ -3,11 +3,14 @@ using Automa.Source.Definitions;
 using static Automa.Source.Utility.Utils;
 using ExpOperand = (string Content, string Type);
 
+
+
 namespace Automa.Source.Core
 {
     // Main parser class
     internal class Parser(LexerToken[] LexTok,bool isdebug = false)
     {
+
         string[] Keywords = ["Write", "Read", "If","Elif","Else","Run"];
         string[] LogicOps = ["||", "&&"];
 
@@ -152,10 +155,10 @@ namespace Automa.Source.Core
                         SetNext(newList, CT);
                         break;
                     }
-                    else if (CT is LexerType.TokenString or LexerType.TokenInt)
+                    else if (CT is LexerType.TokenString or LexerType.TokenInt or LexerType.TokenBool)
                     {
                         string content = Current.GetContent();
-                        string type = (CT is LexerType.TokenString) ? "String" : "Int";
+                        string type = (CT is LexerType.TokenString) ? "String" : (CT is LexerType.TokenInt)? "Int": "Bool";
 
                         if (Operator.Length is 0)
                         {
@@ -226,17 +229,17 @@ namespace Automa.Source.Core
 
 
                 }
-
+                #pragma warning disable CS8600
                 string lcontent = left.Content, rcontent = right.Content;
 
-                if (Operator.Length is 0)
-                {
-                    throw new Exception("Missing Operator, must have an operator!");
-                }
+                // if (Operator.Length is 0)
+                // {
+                //     throw new Exception("Missing Operator, must have an operator!");
+                // }
 
                 if (Operator == "EQ")
                 {
-                   
+                   #pragma warning disable CS8604
                     EqualTo eq = new EqualTo(new LiteralExpression(new AutomaString(lcontent)), new LiteralExpression( new AutomaString(rcontent)));
 
 
@@ -578,6 +581,22 @@ namespace Automa.Source.Core
                             expr = new Or(Current, ParseExpression(NextUnit));
                         }
                     }
+                }
+                else
+                {
+                    AutomaSingle single = new(new LiteralExpression(new AutomaString(lcontent)));
+
+                    if(left.Type == "Bool")
+                    {
+                        single=single with {Main=new LiteralExpression(new AutomaBoolean(bool.Parse(lcontent)))};
+                    }else if(left.Type is "Identifier")
+                    {
+                        single = single with {Main=new VariableExpression(lcontent)};
+                    }else if(left.Type is "FunctionCall")
+                    {
+                        single = single with {Main=new FunctionExpression(new AutomaFunction(left.Content,Args))};
+                    }
+                    expr=new LogicalUnit(single);
                 }
 
                 return expr;

@@ -1,1 +1,0 @@
-run=Run("ping -n 4 8.8.8.8",True);Write(run);

@@ -13,7 +13,7 @@ namespace Automa.Source.Core.Shell
 
         private void PrintBanner()
         {
-            string banner = "\e[0;96mAutoma\e[0m CLI v1.1.0\nType \"\e[1;36mhelp\e[0m\" to get acquainted";
+            string banner = "\e[0;96mAutoma\e[0m CLI v1.2.0\nType \"\e[1;36mhelp\e[0m\" to get acquainted";
             Console.WriteLine(banner + Environment.NewLine);
         }
 

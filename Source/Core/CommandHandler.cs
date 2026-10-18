@@ -45,7 +45,7 @@ namespace Automa.Source.Core
             },
             {
 
-                "version", (string[] args) => { Print("Automa 1.1.0"); return 0;  } // Current Version of Automa
+                "version", (string[] args) => { Print("Automa 1.2.0"); return 0;  } // Current Version of Automa
             },
             {
                 "clear",  (string[] args) => {Console.Clear(); return 0; }

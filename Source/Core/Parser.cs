@@ -62,7 +62,7 @@ namespace Automa.Source.Core
 
                     if (isdebug)
                     {
-                        Console.Write(", {0} ,", CT.ToString());
+                        Console.Write("{0} ,", CT.ToString());
                     }
 
                     if(CT is LexerType.Token_KeyWord)
@@ -585,6 +585,7 @@ namespace Automa.Source.Core
                 else
                 {
                     AutomaSingle single = new(new LiteralExpression(new AutomaString(lcontent)));
+                 //   Console.WriteLine("[DEBUG] Expression type: {0}",left.Type);
 
                     if(left.Type == "Bool")
                     {
@@ -596,7 +597,7 @@ namespace Automa.Source.Core
                     {
                         single = single with {Main=new FunctionExpression(new AutomaFunction(left.Content,Args))};
                     }
-                    expr=new LogicalUnit(single);
+                    expr= new LogicalUnit(single);
                 }
 
                 return expr;
@@ -1191,7 +1192,7 @@ namespace Automa.Source.Core
                                 CR = new(new AutomaBoolean(bool.Parse(CurrentContent.value)), VariableType.Boolean);
                             } else if (Rtype is "identifier")
                             {
-                                CR = new(new AutomaString(CurrentContent.value), VariableType.Identifier);
+                                CR = new(new AutomaString(CurrentContent.value), VariableType.Identifier); // need to add automaIdentifier record soon =P
                             }
 
                             Bob.AddNode(new ReturnInstruction(CR));
@@ -1563,6 +1564,18 @@ namespace Automa.Source.Core
                             }
                             else  // finally parse if not
                             {
+
+                                if (isdebug)
+                                {
+                                    Console.WriteLine("[DEBUG] Parsing items: ");
+                                    foreach (var item in expression) {
+
+                                        Console.Write("- {0}\n", item.TokenType);
+                                    
+                                    }
+
+                                }
+
                                 expr = ParseExpression(expression); // Determine Expression
                                 if (CB is "If") // add Block nodes before the next token comes;
                                 {

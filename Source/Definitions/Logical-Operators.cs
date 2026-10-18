@@ -113,7 +113,11 @@ namespace Automa.Source.Definitions
                 _ => new AutomaNull()
             };
 
-            return Equals(Val?.Eval(Variables),true);
+         //   Console.WriteLine("[DEBUG] Current Return: {0}, with type {1}", Val?.Eval() ?? "NULL",Val.GetType());
+
+
+
+            return Equals((bool.TryParse(Val?.Eval().ToString(),out bool result))?result:throw new Exception("Current Single is not a boolean"),true);
         }
     }
 

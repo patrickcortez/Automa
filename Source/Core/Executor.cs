@@ -383,6 +383,11 @@ namespace Automa.Source.Core
 
                             Hold = Variables.ToList(); // Hold original for comparison
 
+                            if (isdebug)
+                            {
+                                Console.WriteLine("[DEBUG] Executing IF Block");
+                            }
+
                             if (If.Eval(Variables))
                             {
                                 If.ExecuteBlock(Variables);
@@ -458,6 +463,8 @@ namespace Automa.Source.Core
                             {
                                 case AutomaString str:
 
+                                  //  Console.WriteLine("[DEBUG] Current Return Type:{0}", returning.value.type);
+
                                     if(returning.value.type is VariableType.Identifier)
                                     {
                                         Variable? target = Variables.FirstOrDefault(ex => ex.name == str.value);
@@ -468,6 +475,8 @@ namespace Automa.Source.Core
                                         }
 
                                         int index =  Variables.IndexOf(target);
+
+                                     //   Console.WriteLine("[DEBUG] {0}",target.value);
 
                                         if(target.value is AutomaString stri)
                                         {

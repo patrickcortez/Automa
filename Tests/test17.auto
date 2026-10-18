@@ -6,6 +6,6 @@ Function Act(){
 }
 
 If(Act()){
-    Write("Hello!");
+    Write("\nHello!");
 }
 

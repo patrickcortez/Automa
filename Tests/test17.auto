@@ -1,0 +1,11 @@
+Write("Singles Test");
+
+Function Act(){
+    var=True;
+    Return var;
+}
+
+If(Act()){
+    Write("Hello!");
+}
+

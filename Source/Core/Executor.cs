@@ -3,7 +3,7 @@ using Automa.Source.Core.IO;
 using Automa.Source.Definitions;
 using static Automa.Source.Utility.Utils;
 
-
+#pragma warning disable CS8602
 // Implement function calls and returns
 
 namespace Automa.Source.Core

@@ -26,7 +26,6 @@ public static class Automa
             string[] _args = args.Skip(1).ToArray();
 
             CommandHandler command = new(_cmd: cmd,_args: _args);
-            
 
 
             return command.Start();

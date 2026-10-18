@@ -3,10 +3,9 @@ using Automa.Source.Definitions;
 using static Automa.Source.Utility.Utils;
 using ExpOperand = (string Content, string Type);
 
-// implement fc's in Nested blocks
-
 namespace Automa.Source.Core
 {
+    // Main parser class
     internal class Parser(LexerToken[] LexTok,bool isdebug = false)
     {
         string[] Keywords = ["Write", "Read", "If","Elif","Else","Run"];
@@ -81,6 +80,7 @@ namespace Automa.Source.Core
                         else
                         {
                             right = (value, "Bool");
+                            
                         }
 
                         continue;

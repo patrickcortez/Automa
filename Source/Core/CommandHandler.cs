@@ -16,6 +16,9 @@ namespace Automa.Source.Core
                 Print("help             - Displays this message");
                 Print("clear            - clears terminal screen");
                 return 0;
+                
+                
+                
 
                 }
             },
@@ -23,6 +26,7 @@ namespace Automa.Source.Core
                 "run",  (string[] args) => { // Run script;
                     string file = args[0];
                     string flag = (args.Length > 1)? args[1] : "";
+                
 
                     if (!Path.Exists(file)) // check file existence
                     {
@@ -41,7 +45,7 @@ namespace Automa.Source.Core
             },
             {
 
-                "version", (string[] args) => { Print("Automa 0.9.0"); return 0;  } // Current Version of Automa
+                "version", (string[] args) => { Print("Automa 1.0.0"); return 0;  } // Current Version of Automa
             },
             {
                 "clear",  (string[] args) => {Console.Clear(); return 0; }

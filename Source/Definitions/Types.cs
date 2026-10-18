@@ -35,6 +35,8 @@ namespace Automa.Source.Definitions
     internal record AutomaFunction(string name,List<Parameter> args) : Value<Return>
     {
         protected override Return UEval(List<Variable>? Scope) => FunctionTable.RunFunc(name, args, Scope);
+        
+
     }
 
     // for error handling

@@ -183,6 +183,15 @@ Write("Result of Task $task")
 
 ```
 
+## Out of Support:
+
+The following are not yet supported:
+
+	- Parenthesis depth in if-else evaluation
+	- Arithmetic in if-else evaluation
+	- Instructions inside if-else eval
+
+
 ## CLI Usage:
 
 To use **Automa** in the CommandLine, Simple do:

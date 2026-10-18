@@ -16,6 +16,7 @@
     <PackageTags>interpreter; automation;</PackageTags>
     <PackAsTool>True</PackAsTool>
     <PackageIcon>Automa.png</PackageIcon>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
